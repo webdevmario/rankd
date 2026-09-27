@@ -25,7 +25,8 @@
   --secondary-foreground: #ffffff;
   --muted: #141414;
   --muted-foreground: #8f8f8f;
-  --accent: #1a1a1a;
+  /* Hover and active fill for ghost, outline and toggle controls. Visible on both black and card. */
+  --accent: #262626;
   --accent-foreground: #ffffff;
   --destructive: #ff5a4f;
   --border: #222222;
@@ -90,10 +91,18 @@
   html {
     @apply bg-background font-sans;
     color-scheme: dark;
+    /* Reserve the scrollbar's width on every page so short and long pages line up. */
+    scrollbar-gutter: stable;
   }
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* shadcn leaves buttons on the default arrow; rankd uses a pointer for anything clickable. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
   }
 
   ::selection {
