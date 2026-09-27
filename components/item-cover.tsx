@@ -41,7 +41,8 @@ export function ItemCover({ title, src, className, initialsClassName = "text-lg"
   );
 }
 
-function initials(title: string): string {
+/** Up to two initials for a cover placeholder, skipping a leading "The", "A" or "An". */
+export function initials(title: string): string {
   const words = title
     .replace(/^(the|a|an)\s+/i, "")
     .split(/\s+/)

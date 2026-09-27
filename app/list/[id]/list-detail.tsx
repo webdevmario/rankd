@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
-import { ArrowLeft, Pencil, Plus, Rows3 } from "lucide-react";
+import { ArrowLeft, ImageDown, Pencil, Plus, Rows3 } from "lucide-react";
 import { ItemDialog } from "@/components/list/item-dialog";
 import { ModeToggle } from "@/components/list/mode-toggle";
 import { RankedList } from "@/components/list/ranked-list";
@@ -76,6 +76,17 @@ export function ListDetail({ id }: { id: string }) {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <h1 className="min-w-0 text-3xl font-semibold tracking-tight text-balance">{list.title}</h1>
               <div className="flex shrink-0 gap-2">
+                {list.items.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    render={<Link href={`/list/${list.id}/share`} />}
+                    nativeButton={false}
+                  >
+                    <ImageDown />
+                    Share
+                  </Button>
+                )}
                 <Button variant="outline" size="lg" onClick={() => show({ kind: "edit-list" })}>
                   <Pencil />
                   Edit list

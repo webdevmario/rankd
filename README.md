@@ -159,11 +159,14 @@ components/
   list/                       Ranked list (dnd-kit + framer-motion), item card, add/edit item modal, cover picker
   lists/                      Index cards, new/edit list modal
   tier/                       Tier board, tier card, tier summary
+  share/                      Share-image composer: export card, themes, controls
 app/                          App Router pages
   page.tsx                    /                    All lists
   list/[id]/page.tsx          /list/[id]           Tier board or linear ranking; add, edit and list modals
+  list/[id]/share/page.tsx    /list/[id]/share     Share-image composer (PNG export)
   api/lists/route.ts          GET /api/lists       Every list with its items
   api/lists/[id]/route.ts     GET, PUT, DELETE     One list (PUT upserts the whole list)
+  api/image/route.ts          GET /api/image?url=  Image proxy so exported covers aren't blocked by CORS
 db/migrations/                Numbered SQL migrations (npm run db:migrate)
 ```
 
@@ -221,6 +224,11 @@ To add a source: implement `ItemSource`, register a factory in `lib/sources/inde
 - Covers can be an image URL or a photo uploaded from the device. Uploads are shrunk to a ~540px JPEG in
   the browser (`lib/image.ts`) and stored as a data URL in `coverImageUrl` (a text column in Postgres),
   around 30 to 60 KB each.
+- **Share** on a list opens a Carbon-style composer (`components/share/`): a themed card (Ember, Collage,
+  Midnight, Paper) in a fixed or auto frame, exported to PNG with `modern-screenshot`. Covers are inlined as
+  data URLs through `/api/image` first (Open Library covers are upgraded to the large size), and fixed
+  frames pick the largest cover size that fits every tier (`lib/share/options.ts`). Settings are remembered
+  per browser in `localStorage` (`rankd:share-options`).
 
 ## Deploying
 

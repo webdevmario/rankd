@@ -31,6 +31,7 @@
     "cn": "^0.4.0",
     "framer-motion": "^13.4.4",
     "lucide-react": "^1.48.0",
+    "modern-screenshot": "^4.7.0",
     "next": "15.5.26",
     "pg": "^8.23.0",
     "react": "19.1.0",
