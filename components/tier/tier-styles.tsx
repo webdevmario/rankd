@@ -1,38 +1,30 @@
+import { TIER_COLOR_FILL } from "@/lib/tier-colors";
 import { cn } from "@/lib/utils";
-import type { Tier } from "@/types/list";
+import type { TierDef } from "@/types/list";
 
-/** Solid badge fill per tier; text on top is always black. */
-export const TIER_FILL: Record<Tier, string> = {
-  S: "bg-linear-to-br from-tier-s to-tier-s-gold",
-  A: "bg-tier-a",
-  B: "bg-tier-b",
-  C: "bg-tier-c",
-  D: "bg-tier-d",
-  F: "bg-tier-f",
-};
+/** Label text size by length: a letter or two fills the cell, longer names step down and wrap. */
+export function labelSize(label: string): "letter" | "short" | "long" {
+  const length = [...label].length;
+  if (length <= 2) return "letter";
+  if (length <= 5) return "short";
+  return "long";
+}
 
-/** Text colour per tier, for counts and inline mentions. */
-export const TIER_TEXT: Record<Tier, string> = {
-  S: "text-tier-s",
-  A: "text-tier-a",
-  B: "text-tier-b",
-  C: "text-tier-c",
-  D: "text-tier-d",
-  F: "text-tier-f",
-};
-
-/** Small tier letter chip, used on cards outside the board (linear view, index). */
-export function TierChip({ tier, className }: { tier: Tier; className?: string }) {
+/** Small tier chip, used on cards outside the board (linear view, tier summary). */
+export function TierChip({ tier, className }: { tier: TierDef; className?: string }) {
+  const letter = labelSize(tier.label) === "letter";
   return (
     <span
       className={cn(
-        "inline-flex size-5 shrink-0 items-center justify-center rounded-[5px] text-[11px] leading-none font-black text-black",
-        TIER_FILL[tier],
+        "inline-flex h-5 shrink-0 items-center justify-center rounded-[5px] text-[11px] leading-none font-black text-black",
+        letter ? "min-w-5 px-0.5" : "max-w-32 truncate px-1.5 font-bold",
         className,
       )}
-      aria-label={`${tier} tier`}
+      style={{ background: TIER_COLOR_FILL[tier.color] }}
+      aria-label={`${tier.label} tier`}
+      title={letter ? undefined : tier.label}
     >
-      {tier}
+      {tier.label}
     </span>
   );
 }

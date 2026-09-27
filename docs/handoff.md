@@ -75,7 +75,7 @@ Then check `curl localhost:3010/api/lists` returns his lists.
 - `cn` comes from shadcn's own `cn` npm package, re-exported by `lib/utils.ts`.
 - rankd's palette is shadcn's semantic tokens in `app/globals.css` (`<html class="dark">`, dark only):
   `primary` is the orange `#ff7a1a`, `muted-foreground` the grey text, `accent` (#262626) the hover fill.
-  Extras: `faint`, `border-strong`, `tier-s` through `tier-f`. Don't reintroduce the old names
+  Extras: `faint`, `border-strong`. Tier colours are presets in `lib/tier-colors.ts`. Don't reintroduce the old names
   (`surface`, `line`, `danger`, old `accent` = orange).
 - Base UI uses `render` props, not Radix's `asChild` (see `components/confirm-dialog.tsx`).
 - Modals go through `components/responsive-modal.tsx` (Dialog on desktop, swipe-down Drawer under 640px).
@@ -88,11 +88,8 @@ Then check `curl localhost:3010/api/lists` returns his lists.
    didn't apply", probably because he was looking at the old prod build at the time. Everything from his
    original list shipped (hover lift removed, no item preview on cards, modals, sync, readable tier summary,
    photo upload, cover placeholders, Stacks text removed, tagline moved). Confirm nothing's missing.
-2. **Custom tiers per list** (he wants this "at some point"). Tiers are hard-coded today: `TIERS` in
-   `types/list.ts`, colours in `globals.css`/`components/tier/tier-styles.tsx`, a check constraint on
-   `items.tier`, and the X/10 rating mapping in `lib/tiers.ts`. Needs a per-list tier table (id, label,
-   colour, position), items referencing a tier id, an editor (add, rename, recolour, reorder, delete with
-   items falling to Unranked) and a data migration.
+2. **Custom tiers per list**: shipped (tier editor on each row label, presets only). Not done yet: drag to
+   reorder rows (Move up/down buttons for now), "Clear row", and an Undo toast. Mario chose to skip Undo.
 3. **Linear view on wide screens**: rows now stretch to 1152px, so notes run long. Offered: narrow that view
    or use two columns.
 4. **Width**: offered going to 1280px or edge to edge if he wants it closer to TierMaker.

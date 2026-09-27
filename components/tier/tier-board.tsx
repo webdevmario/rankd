@@ -21,6 +21,7 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove, rectSortingStrategy, SortableContext, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { Plus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   liftModifier,
@@ -28,11 +29,13 @@ import {
   unliftedKeyboardCoordinates,
   useDropAnimation,
 } from "@/components/list/drag-effects";
+import { TIER_COLOR_FILL } from "@/lib/tier-colors";
+import { groupByTier, newTier, tierZones, UNRANKED, zoneOf, type TierZone } from "@/lib/tiers";
 import { cn } from "@/lib/utils";
-import { groupByTier, isTierZone, TIER_ZONES, UNRANKED, zoneOf, type TierZone } from "@/lib/tiers";
-import { TIERS, type Item } from "@/types/list";
+import { MAX_TIERS, type Item, type TierDef } from "@/types/list";
 import { TierCard } from "./tier-card";
-import { TIER_FILL } from "./tier-styles";
+import { TierEditor, type TierEditorActions } from "./tier-editor";
+import { labelSize } from "./tier-styles";
 
 type ZoneIds = Record<TierZone, string[]>;
 
@@ -45,36 +48,49 @@ const screenReaderInstructions = {
     "To move this item, press space or enter. Use the arrow keys to move between positions and tiers, then press space or enter to drop it, or escape to cancel.",
 };
 
-function zoneLabel(zone: TierZone | undefined): string {
-  if (!zone) return "nowhere";
-  return zone === UNRANKED ? "Unranked" : `${zone} tier`;
-}
-
-function idsByZone(items: readonly Item[]): ZoneIds {
-  const groups = groupByTier(items);
-  return Object.fromEntries(TIER_ZONES.map((zone) => [zone, groups[zone].map((item) => item.id)])) as ZoneIds;
+function idsByZone(items: readonly Item[], tiers: readonly TierDef[]): ZoneIds {
+  const groups = groupByTier(items, tiers);
+  return Object.fromEntries(tierZones(tiers).map((zone) => [zone, groups[zone].map((item) => item.id)]));
 }
 
 interface TierBoardProps {
   items: Item[];
+  tiers: TierDef[];
   onMove: (itemId: string, zone: TierZone, index: number) => void;
   onEditItem: (itemId: string) => void;
+  onTiersChange: (tiers: TierDef[]) => void;
 }
 
 /**
- * The tier list: S to F rows plus an unranked pool, each a sortable container.
+ * The tier list: the list's own rows plus an unranked pool, each a sortable container.
  * While dragging, cards move between containers in local state (so rows open
  * up live); the final zone and index are committed once on drop.
  */
-export function TierBoard({ items, onMove, onEditItem }: TierBoardProps) {
+export function TierBoard({ items, tiers, onMove, onEditItem, onTiersChange }: TierBoardProps) {
   const [dragIds, setDragIds] = useState<ZoneIds | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const lastOverId = useRef<UniqueIdentifier | null>(null);
   const recentlyMovedZone = useRef(false);
   const dropAnimation = useDropAnimation();
 
+  const [editingTierId, setEditingTierId] = useState<string | null>(null);
+  // Editor callbacks can fire after tiers change (a rename saved as the popover closes), so read the latest.
+  const tiersRef = useRef(tiers);
+  useEffect(() => {
+    tiersRef.current = tiers;
+  }, [tiers]);
+
   const itemsById = useMemo(() => new Map(items.map((item) => [item.id, item])), [items]);
-  const committedIds = useMemo(() => idsByZone(items), [items]);
+  const committedIds = useMemo(() => idsByZone(items, tiers), [items, tiers]);
+  const zones = useMemo(() => tierZones(tiers), [tiers]);
+  // One long name widens every label cell, so the rows stay aligned.
+  const wideLabels = tiers.some((tier) => labelSize(tier.label) === "long");
+  const isZone = useCallback((id: UniqueIdentifier): id is string => zones.includes(String(id)), [zones]);
+  const zoneLabel = (zone: TierZone | undefined): string => {
+    if (!zone) return "nowhere";
+    if (zone === UNRANKED) return "Unranked";
+    return `${tiers.find((tier) => tier.id === zone)?.label ?? zone} tier`;
+  };
   const ids = dragIds ?? committedIds;
 
   const sensors = useSensors(
@@ -93,8 +109,8 @@ export function TierBoard({ items, onMove, onEditItem }: TierBoardProps) {
 
   const findZone = useCallback(
     (id: UniqueIdentifier): TierZone | undefined =>
-      isTierZone(id) ? id : TIER_ZONES.find((zone) => ids[zone].includes(String(id))),
-    [ids],
+      isZone(id) ? id : zones.find((zone) => ids[zone]?.includes(String(id))),
+    [ids, isZone, zones],
   );
 
   /**
@@ -110,7 +126,7 @@ export function TierBoard({ items, onMove, onEditItem }: TierBoardProps) {
       let overId = getFirstCollision(hits, "id");
 
       if (overId != null) {
-        if (isTierZone(overId) && ids[overId].length > 0) {
+        if (isZone(overId) && ids[overId].length > 0) {
           const zoneIds = ids[overId];
           overId =
             closestCenter({
@@ -127,7 +143,7 @@ export function TierBoard({ items, onMove, onEditItem }: TierBoardProps) {
       if (recentlyMovedZone.current) lastOverId.current = activeId;
       return lastOverId.current != null ? [{ id: lastOverId.current }] : [];
     },
-    [activeId, ids],
+    [activeId, ids, isZone],
   );
 
   /** Where the active card lands if dropped now: its current zone, reordered onto `over` within it. */
@@ -136,7 +152,7 @@ export function TierBoard({ items, onMove, onEditItem }: TierBoardProps) {
     const zone = findZone(activeKey);
     if (!zone) return undefined;
     let zoneIds = ids[zone];
-    if (overKey != null && !isTierZone(overKey) && findZone(overKey) === zone) {
+    if (overKey != null && !isZone(overKey) && findZone(overKey) === zone) {
       const from = zoneIds.indexOf(itemId);
       const to = zoneIds.indexOf(String(overKey));
       if (from !== to) zoneIds = arrayMove(zoneIds, from, to);
@@ -158,7 +174,7 @@ export function TierBoard({ items, onMove, onEditItem }: TierBoardProps) {
     },
     onDragCancel: ({ active }) => {
       const item = itemsById.get(String(active.id));
-      return `Cancelled. ${titleOf(active.id)} stays in ${zoneLabel(item ? zoneOf(item) : undefined)}.`;
+      return `Cancelled. ${titleOf(active.id)} stays in ${zoneLabel(item ? zoneOf(item, tiers) : undefined)}.`;
     },
   };
 
@@ -177,9 +193,9 @@ export function TierBoard({ items, onMove, onEditItem }: TierBoardProps) {
     setDragIds((prev) => {
       const current = prev ?? committedIds;
       const target = [...current[to]];
-      let index = isTierZone(over.id) ? target.length : target.indexOf(String(over.id));
+      let index = isZone(over.id) ? target.length : target.indexOf(String(over.id));
       const dragged = active.rect.current.translated;
-      if (!isTierZone(over.id) && dragged && dragged.left > over.rect.left + over.rect.width / 2) index += 1;
+      if (!isZone(over.id) && dragged && dragged.left > over.rect.left + over.rect.width / 2) index += 1;
       target.splice(index < 0 ? target.length : index, 0, String(active.id));
 
       recentlyMovedZone.current = true;
@@ -194,13 +210,51 @@ export function TierBoard({ items, onMove, onEditItem }: TierBoardProps) {
     const { zone, index } = target;
 
     const item = itemsById.get(itemId);
-    const moved = !item || zoneOf(item) !== zone || committedIds[zone].indexOf(itemId) !== index;
+    const moved = !item || zoneOf(item, tiers) !== zone || committedIds[zone].indexOf(itemId) !== index;
     reset();
     if (moved) onMove(itemId, zone, index);
   }
 
   const activeItem = activeId ? itemsById.get(activeId) : undefined;
   const dragging = activeId !== null;
+
+  /** Editor actions for the tier with `id`, always applied to the latest rows. */
+  const tierActions = (id: string): TierEditorActions => {
+    const update = (change: (rows: TierDef[], index: number) => TierDef[]) => {
+      const rows = tiersRef.current;
+      const index = rows.findIndex((tier) => tier.id === id);
+      if (index !== -1) onTiersChange(change([...rows], index));
+    };
+    return {
+      onRename: (label) => update((rows, i) => rows.map((tier, j) => (j === i ? { ...tier, label } : tier))),
+      onRecolor: (color) => update((rows, i) => rows.map((tier, j) => (j === i ? { ...tier, color } : tier))),
+      onMove: (delta) =>
+        update((rows, i) => {
+          const to = i + delta;
+          if (to < 0 || to >= rows.length) return rows;
+          [rows[i], rows[to]] = [rows[to], rows[i]];
+          return rows;
+        }),
+      onInsert: (where) =>
+        update((rows, i) => {
+          if (rows.length >= MAX_TIERS) return rows;
+          const at = where === "above" ? i : i + 1;
+          const created = newTier(rows, at);
+          rows.splice(at, 0, created);
+          setEditingTierId(created.id);
+          return rows;
+        }),
+      onDelete: () => update((rows, i) => (rows.length > 1 ? rows.filter((_, j) => j !== i) : rows)),
+    };
+  };
+
+  const addTier = () => {
+    const rows = tiersRef.current;
+    if (rows.length >= MAX_TIERS) return;
+    const created = newTier(rows, rows.length);
+    onTiersChange([...rows, created]);
+    setEditingTierId(created.id);
+  };
 
   const rowProps = (zone: TierZone) => ({
     zone,
@@ -226,9 +280,34 @@ export function TierBoard({ items, onMove, onEditItem }: TierBoardProps) {
       onDragCancel={reset}
     >
       <div className="tier-board flex flex-col gap-2" data-dragging={dragging}>
-        {TIERS.map((tier) => (
-          <TierRow key={tier} {...rowProps(tier)} />
+        {tiers.map((tier, index) => (
+          <TierRow
+            key={tier.id}
+            {...rowProps(tier.id)}
+            label={
+              <TierEditor
+                tier={tier}
+                index={index}
+                tierCount={tiers.length}
+                itemCount={ids[tier.id]?.length ?? 0}
+                open={editingTierId === tier.id}
+                onOpenChange={(open) => setEditingTierId(open ? tier.id : null)}
+                trigger={<TierLabel tier={tier} wide={wideLabels} />}
+                {...tierActions(tier.id)}
+              />
+            }
+          />
         ))}
+        {tiers.length < MAX_TIERS && (
+          <button
+            type="button"
+            onClick={addTier}
+            className="flex h-10 items-center justify-center gap-1.5 rounded-xl border border-dashed border-border text-sm text-muted-foreground transition-colors hover:border-border-strong hover:bg-accent/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          >
+            <Plus className="size-4" />
+            Add tier
+          </button>
+        )}
         <TierRow {...rowProps(UNRANKED)} />
       </div>
 
@@ -241,6 +320,8 @@ export function TierBoard({ items, onMove, onEditItem }: TierBoardProps) {
 
 interface TierRowProps {
   zone: TierZone;
+  /** The row's label cell (with its editor). Absent for the unranked pool. */
+  label?: React.ReactNode;
   ids: string[];
   itemsById: Map<string, Item>;
   dragging: boolean;
@@ -248,14 +329,13 @@ interface TierRowProps {
   onEditItem: (itemId: string) => void;
 }
 
-function TierRow({ zone, ids, itemsById, dragging, highlighted, onEditItem }: TierRowProps) {
+function TierRow({ zone, label, ids, itemsById, dragging, highlighted, onEditItem }: TierRowProps) {
   const { setNodeRef } = useDroppable({ id: zone });
   const unranked = zone === UNRANKED;
-  const label = unranked ? "Unranked" : `${zone} tier`;
 
   return (
     <section
-      aria-label={`${label}, ${ids.length} ${ids.length === 1 ? "item" : "items"}`}
+      aria-label={`${unranked ? "Unranked" : "Tier"}, ${ids.length} ${ids.length === 1 ? "item" : "items"}`}
       className={cn(
         "overflow-hidden rounded-xl border transition-colors duration-150",
         unranked ? "mt-4 border-dashed border-border-strong bg-transparent" : "border-border bg-card",
@@ -270,17 +350,7 @@ function TierRow({ zone, ids, itemsById, dragging, highlighted, onEditItem }: Ti
       )}
 
       <div className="flex">
-        {!unranked && (
-          <div
-            className={cn(
-              "flex w-12 shrink-0 items-center justify-center text-3xl font-black tracking-tight text-black sm:w-16 sm:text-4xl lg:w-20 lg:text-5xl",
-              TIER_FILL[zone],
-            )}
-            aria-hidden
-          >
-            {zone}
-          </div>
-        )}
+        {!unranked && label}
 
         <SortableContext items={ids} strategy={rectSortingStrategy}>
           <ul
@@ -309,6 +379,36 @@ function TierRow({ zone, ids, itemsById, dragging, highlighted, onEditItem }: Ti
         </SortableContext>
       </div>
     </section>
+  );
+}
+
+const LABEL_TEXT = {
+  letter: "text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl",
+  short: "text-lg font-black tracking-tight sm:text-xl lg:text-2xl",
+  long: "text-[10px] font-bold leading-tight sm:text-xs lg:text-sm",
+} as const;
+
+/** A tier's coloured label cell. Pressing it opens the tier editor. */
+function TierLabel({
+  tier,
+  wide,
+  ...props
+}: { tier: TierDef; wide: boolean } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      type="button"
+      {...props}
+      aria-label={`Edit ${tier.label} tier`}
+      title="Edit tier"
+      className={cn(
+        "flex shrink-0 items-center justify-center px-1.5 text-center break-words text-black transition-[filter] outline-none hover:brightness-110 focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-inset data-[popup-open]:brightness-110",
+        wide ? "w-20 sm:w-24 lg:w-28" : "w-12 sm:w-16 lg:w-20",
+        LABEL_TEXT[labelSize(tier.label)],
+      )}
+      style={{ background: TIER_COLOR_FILL[tier.color] }}
+    >
+      <span className="min-w-0 hyphens-auto">{tier.label}</span>
+    </button>
   );
 }
 

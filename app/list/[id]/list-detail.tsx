@@ -25,6 +25,7 @@ export function ListDetail({ id }: { id: string }) {
     status,
     reorder,
     moveToTier,
+    setTiers,
     setRankingMode,
     addItem,
     saveItem,
@@ -97,7 +98,7 @@ export function ListDetail({ id }: { id: string }) {
             {list.description && <p className="mt-2 max-w-3xl text-muted-foreground">{list.description}</p>}
             <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
               {list.rankingMode === "tier" ? (
-                <TierSummary items={list.items} />
+                <TierSummary items={list.items} tiers={list.tiers} />
               ) : (
                 <p className="text-sm text-muted-foreground tabular-nums">
                   {list.items.length} {list.items.length === 1 ? "item" : "items"} ranked
@@ -121,15 +122,22 @@ export function ListDetail({ id }: { id: string }) {
               />
             ) : list.rankingMode === "tier" ? (
               <>
-                <TierBoard items={list.items} onMove={moveToTier} onEditItem={editItem} />
+                <TierBoard
+                  items={list.items}
+                  tiers={list.tiers}
+                  onMove={moveToTier}
+                  onEditItem={editItem}
+                  onTiersChange={setTiers}
+                />
                 <p className="mt-3 text-xs text-faint">
                   Drag cards between tiers (press and hold on touch). Keyboard: focus a card, space to pick
-                  up, arrows to move. The pencil edits an item.
+                  up, arrows to move. The pencil edits an item. Click a tier&apos;s label to rename, recolour,
+                  move or delete it.
                 </p>
               </>
             ) : (
               <>
-                <RankedList items={list.items} onReorder={reorder} onEditItem={editItem} />
+                <RankedList items={list.items} tiers={list.tiers} onReorder={reorder} onEditItem={editItem} />
                 <p className="mt-3 text-xs text-faint">
                   Drag the handle to reorder, or focus it and use space + arrow keys. Tap an item to edit it.
                 </p>

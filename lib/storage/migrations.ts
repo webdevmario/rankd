@@ -1,8 +1,8 @@
-import { assignInitialTiers } from "@/lib/tiers";
+import { assignInitialTiers, defaultTiers } from "@/lib/tiers";
 import type { Item, List } from "@/types/list";
 
 /** A list as it may exist in storage written by an older version of the app. */
-export type StoredList = Omit<List, "rankingMode"> & Partial<Pick<List, "rankingMode">>;
+export type StoredList = Omit<List, "rankingMode" | "tiers"> & Partial<Pick<List, "rankingMode" | "tiers">>;
 
 /** The seeded King list's original title, written with an em dash (U+2014). */
 const OLD_KING_TITLE = `Stephen King ${String.fromCharCode(0x2014)} Recently Read`;
@@ -18,13 +18,14 @@ const STACKS_SUFFIX = /\s*·\s*\d+\/10 in Stacks$/;
  * - Lists from before ranking modes existed become tier lists, and their items
  *   are placed on the board from any "X/10" rating in their notes/description
  *   (unrated items land in the unranked pool).
+ * - Lists from before custom tiers get the classic S to F rows.
  * - The seeded King list loses the em dash in its title and the Stacks rating
  *   at the end of each description (the tier already says it).
  */
 export function migrateList(stored: StoredList): List {
-  let list = stored.rankingMode
-    ? (stored as List)
-    : { ...stored, rankingMode: "tier" as const, items: assignInitialTiers(stored.items) };
+  let list: List = stored.rankingMode
+    ? { ...stored, rankingMode: stored.rankingMode, tiers: stored.tiers ?? defaultTiers() }
+    : { ...stored, rankingMode: "tier", tiers: defaultTiers(), items: assignInitialTiers(stored.items) };
 
   if (list.title === OLD_KING_TITLE) list = { ...list, title: KING_TITLE };
 

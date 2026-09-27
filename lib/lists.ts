@@ -3,7 +3,7 @@ import { moveItem, patchItem, removeItem } from "@/lib/ranking";
 import { createSource, type ItemSource } from "@/lib/sources";
 import { getStorage, type StorageAdapter } from "@/lib/storage";
 import { cleanItemPatch, cleanOptional } from "@/lib/text";
-import { moveToTier, type TierZone } from "@/lib/tiers";
+import { applyTiers, defaultTiers, moveToTier, type TierZone } from "@/lib/tiers";
 import {
   RANKING_MODES,
   type Item,
@@ -12,6 +12,7 @@ import {
   type ListPatch,
   type NewItem,
   type NewList,
+  type TierDef,
 } from "@/types/list";
 
 /**
@@ -44,6 +45,7 @@ export class ListService {
       description: cleanOptional(input.description),
       itemSourceType: input.itemSourceType ?? "manual",
       rankingMode: input.rankingMode ?? "tier",
+      tiers: defaultTiers(),
       createdAt: timestamp,
       updatedAt: timestamp,
       items: [],
@@ -100,7 +102,14 @@ export class ListService {
   /** Places an item in a tier (or the unranked pool) at `index` within that zone. */
   async moveItemToTier(listId: string, itemId: string, zone: TierZone, index: number): Promise<List> {
     const list = await this.requireList(listId);
-    return this.commit({ ...list, items: moveToTier(list.items, itemId, zone, index) });
+    return this.commit({ ...list, items: moveToTier(list.items, list.tiers, itemId, zone, index) });
+  }
+
+  /** Replaces the tier rows. Items in a removed tier fall to the unranked pool. */
+  async setTiers(listId: string, tiers: TierDef[]): Promise<List> {
+    if (tiers.length === 0) throw new Error("A list needs at least one tier.");
+    const list = await this.requireList(listId);
+    return this.commit({ ...list, tiers, items: applyTiers(list.items, tiers) });
   }
 
   private sourceFor(list: List): ItemSource {

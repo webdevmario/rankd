@@ -18,7 +18,7 @@ import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useMemo, useState } from "react";
-import type { Item } from "@/types/list";
+import type { Item, TierDef } from "@/types/list";
 import { liftModifier, OVERLAY_STYLE, unliftedKeyboardCoordinates, useDropAnimation } from "./drag-effects";
 import { ItemCard } from "./item-card";
 
@@ -33,11 +33,13 @@ const screenReaderInstructions = {
 
 interface RankedListProps {
   items: Item[];
+  /** The list's tiers, for the chip on each card. */
+  tiers: TierDef[];
   onReorder: (activeId: string, overId: string) => void;
   onEditItem: (itemId: string) => void;
 }
 
-export function RankedList({ items, onReorder, onEditItem }: RankedListProps) {
+export function RankedList({ items, tiers, onReorder, onEditItem }: RankedListProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   const dropAnimation = useDropAnimation();
@@ -48,6 +50,8 @@ export function RankedList({ items, onReorder, onEditItem }: RankedListProps) {
   );
 
   const ids = useMemo(() => items.map((item) => item.id), [items]);
+  const tierById = useMemo(() => new Map(tiers.map((tier) => [tier.id, tier])), [tiers]);
+  const tierOf = (item: Item) => (item.tier ? tierById.get(item.tier) : undefined);
   const activeItem = activeId ? items.find((item) => item.id === activeId) : undefined;
 
   const rankOf = (id: UniqueIdentifier) => ids.indexOf(String(id)) + 1;
@@ -88,13 +92,26 @@ export function RankedList({ items, onReorder, onEditItem }: RankedListProps) {
       <SortableContext items={ids} strategy={verticalListSortingStrategy}>
         <ol className="ranked-list flex flex-col gap-2" data-dragging={activeId !== null}>
           {items.map((item, index) => (
-            <SortableItem key={item.id} item={item} rank={index + 1} onEdit={() => onEditItem(item.id)} />
+            <SortableItem
+              key={item.id}
+              item={item}
+              tier={tierOf(item)}
+              rank={index + 1}
+              onEdit={() => onEditItem(item.id)}
+            />
           ))}
         </ol>
       </SortableContext>
 
       <DragOverlay adjustScale modifiers={[lift]} dropAnimation={dropAnimation} style={OVERLAY_STYLE}>
-        {activeItem ? <ItemCard item={activeItem} rank={rankOf(overId ?? activeItem.id)} overlay /> : null}
+        {activeItem ? (
+          <ItemCard
+            item={activeItem}
+            tier={tierOf(activeItem)}
+            rank={rankOf(overId ?? activeItem.id)}
+            overlay
+          />
+        ) : null}
       </DragOverlay>
     </DndContext>
   );
@@ -102,11 +119,12 @@ export function RankedList({ items, onReorder, onEditItem }: RankedListProps) {
 
 interface SortableItemProps {
   item: Item;
+  tier?: TierDef;
   rank: number;
   onEdit: () => void;
 }
 
-function SortableItem({ item, rank, onEdit }: SortableItemProps) {
+function SortableItem({ item, tier, rank, onEdit }: SortableItemProps) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id });
 
@@ -114,6 +132,7 @@ function SortableItem({ item, rank, onEdit }: SortableItemProps) {
     <li ref={setNodeRef} style={{ transform: CSS.Translate.toString(transform), transition }}>
       <ItemCard
         item={item}
+        tier={tier}
         rank={rank}
         placeholder={isDragging}
         handleProps={{ ref: setActivatorNodeRef, ...attributes, ...listeners }}

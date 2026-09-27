@@ -10,9 +10,11 @@ import {
   type BoardMetrics,
   type ShareOptions,
 } from "@/lib/share/options";
-import { groupByTier, UNRANKED, type TierZone } from "@/lib/tiers";
-import { TIERS, type Item, type List } from "@/types/list";
-import { THEME_STYLES, TIER_LABEL_FILL, type ThemeStyle } from "./share-themes";
+import { labelSize } from "@/components/tier/tier-styles";
+import { TIER_COLOR_FILL } from "@/lib/tier-colors";
+import { groupByTier, UNRANKED, zoneOf } from "@/lib/tiers";
+import type { Item, List, TierDef } from "@/types/list";
+import { THEME_STYLES, type ThemeStyle } from "./share-themes";
 
 const CARD_RADIUS = 28;
 const CARD_BORDER = 1;
@@ -43,11 +45,13 @@ export function ShareCard({ list, options, covers, collage, onOverflowChange, re
   const [chrome, setChrome] = useState({ header: 0, footer: 0 });
 
   const rows = useMemo(() => {
-    const groups = groupByTier(list.items);
-    const zones: TierZone[] = TIERS.filter((tier) => options.showEmptyTiers || groups[tier].length > 0);
-    if (options.showUnranked && groups[UNRANKED].length > 0) zones.push(UNRANKED);
-    return zones.map((zone) => ({ zone, items: groups[zone] }));
-  }, [list.items, options.showEmptyTiers, options.showUnranked]);
+    const groups = groupByTier(list.items, list.tiers);
+    const rows: { tier?: TierDef; items: Item[] }[] = list.tiers
+      .filter((tier) => options.showEmptyTiers || groups[tier.id].length > 0)
+      .map((tier) => ({ tier, items: groups[tier.id] }));
+    if (options.showUnranked && groups[UNRANKED].length > 0) rows.push({ items: groups[UNRANKED] });
+    return rows;
+  }, [list.items, list.tiers, options.showEmptyTiers, options.showUnranked]);
 
   // The header and footer are plain text whose height depends on wrapping, so measure them.
   useLayoutEffect(() => {
@@ -81,7 +85,7 @@ export function ShareCard({ list, options, covers, collage, onOverflowChange, re
     onOverflowChange?.(fit.overflow);
   }, [fit.overflow, onOverflowChange]);
 
-  const ranked = list.items.filter((item) => item.tier).length;
+  const ranked = list.items.filter((item) => zoneOf(item, list.tiers) !== UNRANKED).length;
   const updated = new Date(list.updatedAt).toLocaleDateString("en-US", {
     month: "long",
     day: "numeric",
@@ -163,8 +167,8 @@ export function ShareCard({ list, options, covers, collage, onOverflowChange, re
           ) : (
             rows.map((row) => (
               <TierRow
-                key={row.zone}
-                zone={row.zone}
+                key={row.tier?.id ?? UNRANKED}
+                tier={row.tier}
                 items={row.items}
                 covers={covers}
                 metrics={metrics}
@@ -200,7 +204,8 @@ export function ShareCard({ list, options, covers, collage, onOverflowChange, re
 }
 
 interface TierRowProps {
-  zone: TierZone;
+  /** Absent for the unranked pool. */
+  tier?: TierDef;
   items: Item[];
   covers: Map<string, string>;
   metrics: BoardMetrics;
@@ -209,9 +214,12 @@ interface TierRowProps {
   showTitles: boolean;
 }
 
-function TierRow({ zone, items, covers, metrics, innerWidth, theme, showTitles }: TierRowProps) {
+function TierRow({ tier, items, covers, metrics, innerWidth, theme, showTitles }: TierRowProps) {
   const { gap, rowPadding, labelWidth, radius, coverHeight } = metrics;
-  const pool = zone === UNRANKED;
+  const size = tier ? labelSize(tier.label) : "long";
+  const fontSize = !tier
+    ? Math.round(labelWidth * 0.15)
+    : Math.round(labelWidth * (size === "letter" ? 0.5 : size === "short" ? 0.28 : 0.17));
 
   return (
     <div
@@ -231,15 +239,19 @@ function TierRow({ zone, items, covers, metrics, innerWidth, theme, showTitles }
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: pool ? theme.poolLabel : TIER_LABEL_FILL[zone],
-          color: pool ? theme.poolLabelText : "#000000",
-          fontSize: pool ? Math.round(labelWidth * 0.15) : Math.round(labelWidth * 0.5),
-          fontWeight: pool ? 700 : 900,
-          letterSpacing: pool ? "0.08em" : "-0.02em",
-          textTransform: pool ? "uppercase" : undefined,
+          padding: 4,
+          textAlign: "center",
+          overflowWrap: "anywhere",
+          lineHeight: 1.1,
+          background: tier ? TIER_COLOR_FILL[tier.color] : theme.poolLabel,
+          color: tier ? "#000000" : theme.poolLabelText,
+          fontSize,
+          fontWeight: tier && size !== "long" ? 900 : 700,
+          letterSpacing: tier ? "-0.02em" : "0.08em",
+          textTransform: tier ? undefined : "uppercase",
         }}
       >
-        {pool ? "Unranked" : zone}
+        {tier ? tier.label : "Unranked"}
       </div>
       <div
         style={{

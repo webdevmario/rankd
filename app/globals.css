@@ -7,7 +7,7 @@
 /*
  * rankd is dark only. <html> carries the `dark` class so shadcn's `dark:` variants apply,
  * and the palette below is the one source of colour: shadcn's semantic tokens plus a few
- * rankd extras (faint text, a stronger border, the tier colours).
+ * rankd extras (faint text, a stronger border). Tier label colours live in lib/tier-colors.ts.
  */
 :root {
   --radius: 0.625rem;
@@ -35,17 +35,6 @@
 
   --border-strong: #3a3a3a;
   --faint: #5c5c5c;
-}
-
-@theme {
-  /* Tier palette. S blends red into gold; the rest are solid. */
-  --color-tier-s: #ff4d5e;
-  --color-tier-s-gold: #ffc233;
-  --color-tier-a: #ff7a1a;
-  --color-tier-b: #ffd84d;
-  --color-tier-c: #4ade80;
-  --color-tier-d: #5aa9ff;
-  --color-tier-f: #8a8a8a;
 }
 
 @theme inline {

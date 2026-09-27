@@ -18,10 +18,40 @@ export const RANKING_MODES = ["tier", "linear"] as const;
 
 export type RankingMode = (typeof RANKING_MODES)[number];
 
-/** Tiers from best to worst. */
-export const TIERS = ["S", "A", "B", "C", "D", "F"] as const;
+/** The classic rows every new list starts with, best to worst. Their ids are the letters themselves. */
+export const DEFAULT_TIER_IDS = ["S", "A", "B", "C", "D", "F"] as const;
 
-export type Tier = (typeof TIERS)[number];
+export type DefaultTierId = (typeof DEFAULT_TIER_IDS)[number];
+
+/** Preset label colours for tier rows. The fills live in `lib/tier-colors.ts`. */
+export const TIER_COLORS = [
+  "sunset",
+  "red",
+  "orange",
+  "amber",
+  "yellow",
+  "lime",
+  "green",
+  "teal",
+  "blue",
+  "indigo",
+  "purple",
+  "pink",
+  "grey",
+  "white",
+] as const;
+
+export type TierColor = (typeof TIER_COLORS)[number];
+
+/** One row of a list's tier board. */
+export interface TierDef {
+  id: string;
+  label: string;
+  color: TierColor;
+}
+
+export const MAX_TIERS = 20;
+export const MAX_TIER_LABEL = 20;
 
 export interface Item {
   id: string;
@@ -34,8 +64,8 @@ export interface Item {
    * mode this is reading order across the board: S → F, then unranked.
    */
   rank: number;
-  /** Absent means unranked (the pool below the tiers). */
-  tier?: Tier;
+  /** Id of one of the list's tiers. Absent means unranked (the pool below the tiers). */
+  tier?: string;
 }
 
 export interface List {
@@ -44,6 +74,8 @@ export interface List {
   description?: string;
   itemSourceType: ItemSourceType;
   rankingMode: RankingMode;
+  /** The tier board's rows, top (best) to bottom. Always at least one. */
+  tiers: TierDef[];
   /** ISO 8601 timestamp. */
   createdAt: string;
   /** ISO 8601 timestamp. */

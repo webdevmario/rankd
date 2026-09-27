@@ -5,8 +5,8 @@ import { toast } from "sonner";
 import { getListService } from "@/lib/lists";
 import { appendItem, moveItem, patchItem, removeItem } from "@/lib/ranking";
 import { cleanItemPatch, saveErrorMessage } from "@/lib/text";
-import { moveToTier as placeInTier, type TierZone } from "@/lib/tiers";
-import type { ItemPatch, List, ListPatch, NewItem, RankingMode } from "@/types/list";
+import { applyTiers, moveToTier as placeInTier, type TierZone } from "@/lib/tiers";
+import type { ItemPatch, List, ListPatch, NewItem, RankingMode, TierDef } from "@/types/list";
 import { useRefetchOnFocus } from "./use-refetch-on-focus";
 
 type Status = "loading" | "ready" | "not-found" | "error";
@@ -64,8 +64,17 @@ export function useList(id: string) {
   const moveToTier = useCallback(
     (itemId: string, zone: TierZone, index: number) =>
       optimistic(
-        (list) => ({ ...list, items: placeInTier(list.items, itemId, zone, index) }),
+        (list) => ({ ...list, items: placeInTier(list.items, list.tiers, itemId, zone, index) }),
         () => getListService().moveItemToTier(id, itemId, zone, index),
+      ),
+    [id, optimistic],
+  );
+
+  const setTiers = useCallback(
+    (tiers: TierDef[]) =>
+      optimistic(
+        (list) => ({ ...list, tiers, items: applyTiers(list.items, tiers) }),
+        () => getListService().setTiers(id, tiers),
       ),
     [id, optimistic],
   );
@@ -133,6 +142,7 @@ export function useList(id: string) {
     ...state,
     reorder,
     moveToTier,
+    setTiers,
     setRankingMode,
     addItem,
     updateItem,

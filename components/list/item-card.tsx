@@ -6,7 +6,7 @@ import { GripVertical, Pencil } from "lucide-react";
 import { ItemCover } from "@/components/item-cover";
 import { TierChip } from "@/components/tier/tier-styles";
 import { cn } from "@/lib/utils";
-import type { Item } from "@/types/list";
+import type { Item, TierDef } from "@/types/list";
 
 export interface DragHandleProps extends HTMLAttributes<HTMLButtonElement> {
   ref?: Ref<HTMLButtonElement>;
@@ -14,6 +14,8 @@ export interface DragHandleProps extends HTMLAttributes<HTMLButtonElement> {
 
 interface ItemCardProps {
   item: Item;
+  /** The item's tier, shown as a chip. Absent when unranked. */
+  tier?: TierDef;
   rank: number;
   handleProps?: DragHandleProps;
   /** The slot left behind while this item is being dragged. */
@@ -27,7 +29,7 @@ const spring = { type: "spring", stiffness: 520, damping: 34 } as const;
 const RESTING_SHADOW = "0px 0px 0px -16px rgba(0,0,0,0), 0px 0px 0px 0px rgba(255,122,26,0)";
 const LIFTED_SHADOW = "0px 24px 48px -16px rgba(0,0,0,0.95), 0px 0px 0px 1px rgba(255,122,26,0.35)";
 
-export function ItemCard({ item, rank, handleProps, placeholder, overlay, onEdit }: ItemCardProps) {
+export function ItemCard({ item, tier, rank, handleProps, placeholder, overlay, onEdit }: ItemCardProps) {
   return (
     <motion.div
       initial={overlay ? { boxShadow: RESTING_SHADOW } : { opacity: 0, y: 8 }}
@@ -73,7 +75,7 @@ export function ItemCard({ item, rank, handleProps, placeholder, overlay, onEdit
 
         <div className="min-w-0 flex-1 pt-1">
           <div className="flex min-w-0 items-center gap-2">
-            {item.tier && <TierChip tier={item.tier} />}
+            {tier && <TierChip tier={tier} />}
             <h3 className="truncate leading-snug font-semibold text-foreground" title={item.title}>
               {item.title}
             </h3>

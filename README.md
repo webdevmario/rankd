@@ -28,13 +28,23 @@ talk to the service.
 Each list has a `rankingMode`, and a Tier / Linear switch on the list page flips between them. Both views
 read the same data.
 
-- **`tier`** (the default): S, A, B, C, D and F rows plus an **Unranked** pool, where new items land. Drag
-  cards between rows or within a row. Each item's `tier` is stored on the item; no tier means unranked.
+- **`tier`** (the default): the list's tier rows plus an **Unranked** pool, where new items land. Drag
+  cards between rows or within a row. Each item's `tier` (a tier id) is stored on the item; no tier means
+  unranked.
 - **`linear`**: the original numbered list you drag to reorder.
 
-`rank` is always the order you'd read the tier board in: S row left to right, then A, and so on down to F,
-then Unranked. Every tier move re-ranks in that order (`lib/tiers.ts`), so the linear view always matches
+`rank` is always the order you'd read the tier board in: the top row left to right, then the next, and
+so on down to the last row, then Unranked. Every tier move re-ranks in that order (`lib/tiers.ts`), so the linear view always matches
 the board. Reordering in the linear view changes `rank` but not tiers.
+
+### Custom tiers
+
+Every list owns its rows (`list.tiers`: id, label, colour), and new lists start with the classic S to F.
+Clicking a row's label opens the tier editor (`components/tier/tier-editor.tsx`: a popover on desktop, a
+bottom sheet on phones) to rename, pick one of the preset colours (`lib/tier-colors.ts`), move the row up or
+down, add a row above or below, or delete it. Deleting a row with items asks first; its items go to the top
+of Unranked. `applyTiers` in `lib/tiers.ts` re-seats items and re-ranks after any change to the rows.
+The classic rows keep the ids `S` to `F`, so the "X/10" import mapping still lands on them.
 
 ## Running locally
 
@@ -66,7 +76,8 @@ Stop the production service (`npm run prod:stop`) before running `npm run dev`.
 
 ### Database
 
-Two tables, `lists` and `items` (`db/migrations/001_lists_and_items.sql`). Add a schema change as the next
+Two tables, `lists` and `items` (`db/migrations/001_lists_and_items.sql`); each list's tier rows are a
+`jsonb` column on `lists` (`002_custom_tiers.sql`). Add a schema change as the next
 numbered `.sql` file; `npm run db:migrate` applies each file once, in order, and records it in
 `schema_migrations`. `npm run prod:deploy` runs it before building.
 
@@ -158,7 +169,7 @@ components/
   item-cover.tsx              Cover image, or an initials placeholder when there isn't one
   list/                       Ranked list (dnd-kit + framer-motion), item card, add/edit item modal, cover picker
   lists/                      Index cards, new/edit list modal
-  tier/                       Tier board, tier card, tier summary
+  tier/                       Tier board, tier card, tier summary, tier editor
   share/                      Share-image composer: export card, themes, controls
 app/                          App Router pages
   page.tsx                    /                    All lists
@@ -173,8 +184,9 @@ db/migrations/                Numbered SQL migrations (npm run db:migrate)
 ### Data model
 
 ```ts
-List { id, title, description?, itemSourceType, rankingMode, createdAt, updatedAt, items: Item[] }
-Item { id, title, description?, coverImageUrl?, notes?, rank, tier? }
+List { id, title, description?, itemSourceType, rankingMode, tiers: TierDef[], createdAt, updatedAt, items: Item[] }
+TierDef { id, label, color }
+Item { id, title, description?, coverImageUrl?, notes?, rank, tier? }   // tier: a TierDef id
 ```
 
 `itemSourceType` is `"manual" | "stack-api" | "csv-import"`. Only `manual` has an adapter; the others are
@@ -213,7 +225,7 @@ To add a source: implement `ItemSource`, register a factory in `lib/sources/inde
   components with `npx shadcn@latest add <name>`; they land in `components/ui/` and are ours to edit.
 - Dark only: `<html class="dark">`, with the palette defined once in `app/globals.css` as shadcn's semantic
   tokens (`--primary` is the orange accent `#ff7a1a`, `--muted-foreground` the grey text, and so on) plus
-  rankd extras (`--faint`, `--border-strong`, the tier colours).
+  rankd extras (`--faint`, `--border-strong`). Tier label colours are presets in `lib/tier-colors.ts`.
 - Drag-and-drop uses `@dnd-kit` with pointer and keyboard sensors. To reorder from the keyboard, focus a
   handle, press space, move with the arrow keys, then press space to drop. Screen readers hear each step
   announced by title and rank.

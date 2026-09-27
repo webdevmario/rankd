@@ -1,5 +1,5 @@
 import "server-only";
-import type { Item, ItemSourceType, List, RankingMode, Tier } from "@/types/list";
+import type { Item, ItemSourceType, List, RankingMode, TierDef } from "@/types/list";
 import { getPool, transaction } from "./db";
 
 interface ListRow {
@@ -8,6 +8,7 @@ interface ListRow {
   description: string | null;
   item_source_type: ItemSourceType;
   ranking_mode: RankingMode;
+  tiers: TierDef[];
   created_at: Date;
   updated_at: Date;
 }
@@ -20,10 +21,10 @@ interface ItemRow {
   cover_image_url: string | null;
   notes: string | null;
   rank: number;
-  tier: Tier | null;
+  tier: string | null;
 }
 
-const LIST_COLUMNS = "id, title, description, item_source_type, ranking_mode, created_at, updated_at";
+const LIST_COLUMNS = "id, title, description, item_source_type, ranking_mode, tiers, created_at, updated_at";
 const ITEM_COLUMNS = "id, list_id, title, description, cover_image_url, notes, rank, tier";
 
 /** Every list with its items, most recently updated first. */
@@ -56,12 +57,13 @@ export async function findList(id: string): Promise<List | null> {
 export async function upsertList(list: List): Promise<List> {
   await transaction(async (client) => {
     await client.query(
-      `insert into lists (${LIST_COLUMNS}) values ($1, $2, $3, $4, $5, $6, $7)
+      `insert into lists (${LIST_COLUMNS}) values ($1, $2, $3, $4, $5, $6::jsonb, $7, $8)
        on conflict (id) do update set
          title = excluded.title,
          description = excluded.description,
          item_source_type = excluded.item_source_type,
          ranking_mode = excluded.ranking_mode,
+         tiers = excluded.tiers,
          updated_at = excluded.updated_at`,
       [
         list.id,
@@ -69,6 +71,7 @@ export async function upsertList(list: List): Promise<List> {
         list.description ?? null,
         list.itemSourceType,
         list.rankingMode,
+        JSON.stringify(list.tiers),
         list.createdAt,
         list.updatedAt,
       ],
@@ -108,6 +111,7 @@ function toList(row: ListRow, items: Item[]): List {
     ...(row.description ? { description: row.description } : {}),
     itemSourceType: row.item_source_type,
     rankingMode: row.ranking_mode,
+    tiers: row.tiers,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
     items,

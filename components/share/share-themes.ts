@@ -95,13 +95,3 @@ export const THEME_STYLES: Record<ShareTheme, ThemeStyle> = {
     coverShadow: "0 8px 18px -8px rgba(80, 55, 25, 0.45)",
   },
 };
-
-/** Tier label fills, matching the board. S blends red into gold. */
-export const TIER_LABEL_FILL = {
-  S: "linear-gradient(135deg, #ff4d5e, #ffc233)",
-  A: "#ff7a1a",
-  B: "#ffd84d",
-  C: "#4ade80",
-  D: "#5aa9ff",
-  F: "#8a8a8a",
-} as const;
