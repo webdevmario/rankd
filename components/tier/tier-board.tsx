@@ -408,9 +408,11 @@ const LABEL_TEXT = {
 } as const;
 
 /**
- * A tier's coloured label cell. Pressing it opens the tier editor. Hover (and
- * an open editor) brightens it, draws an inner ring and shows a pencil; on
- * touch screens the pencil stays faintly visible.
+ * A tier's coloured label cell. Its left corners follow the row's rounded
+ * border (the row's radius less its 1px border), so the hover ring does too.
+ * Pressing it opens the tier editor. Hover (and an open editor) brightens it,
+ * draws an inner ring and shows a pencil; on touch screens the pencil stays
+ * faintly visible.
  */
 function TierLabel({
   tier,
@@ -426,7 +428,7 @@ function TierLabel({
       aria-label={`Edit ${tier.label} tier`}
       title="Edit tier"
       className={cn(
-        "group/label relative flex shrink-0 cursor-pointer items-center justify-center px-1.5 text-center break-words text-black transition-[filter] outline-none hover:brightness-110 data-[active=true]:brightness-110",
+        "group/label relative flex shrink-0 cursor-pointer items-center justify-center rounded-l-[calc(var(--radius-xl)-1px)] px-1.5 text-center break-words text-black transition-[filter] outline-none hover:brightness-110 data-[active=true]:brightness-110",
         wide ? "w-20 sm:w-24 lg:w-28" : "w-12 sm:w-16 lg:w-20",
         LABEL_TEXT[labelSize(tier.label)],
       )}
@@ -435,7 +437,7 @@ function TierLabel({
       <span className="min-w-0 hyphens-auto">{tier.label}</span>
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-0 ring-3 ring-black/0 transition-shadow ring-inset group-hover/label:ring-black/40 group-focus-visible/label:ring-black/60 group-data-[active=true]/label:ring-black/60"
+        className="pointer-events-none absolute inset-0 rounded-l-[inherit] ring-3 ring-black/0 transition-shadow ring-inset group-hover/label:ring-black/40 group-focus-visible/label:ring-black/60 group-data-[active=true]/label:ring-black/60"
       />
       <span
         aria-hidden
