@@ -55,7 +55,9 @@ export function TierCard({ item, overlay, placeholder, onEdit }: TierCardProps) 
         )}
       </div>
 
-      <p className="mt-1 line-clamp-2 text-[11px] leading-tight text-neutral-300">{item.title}</p>
+      <p className="mt-1 truncate text-[11px] leading-tight text-neutral-300" title={item.title}>
+        {item.title}
+      </p>
 
       {onEdit && (
         <button
