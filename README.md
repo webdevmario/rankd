@@ -41,8 +41,9 @@ the board. Reordering in the linear view changes `rank` but not tiers.
 
 Every list owns its rows (`list.tiers`: id, label, colour), and new lists start with the classic S to F.
 Clicking a row's label opens the tier editor (`components/tier/tier-editor.tsx`: a popover on desktop, a
-bottom sheet on phones) to rename, pick one of the preset colours (`lib/tier-colors.ts`), move the row up or
-down, add a row above or below, or delete it. Deleting a row with items asks first; its items go to the top
+bottom sheet on phones). Name and colour are a draft, previewed on the label, that Save or Enter commits
+and Cancel, Escape or clicking away discards. Move up or down, add above or below, and delete act at once
+(saving any draft first). Colours are presets in `lib/tier-colors.ts`. Deleting a row with items asks first; its items go to the top
 of Unranked. `applyTiers` in `lib/tiers.ts` re-seats items and re-ranks after any change to the rows.
 The classic rows keep the ids `S` to `F`, so the "X/10" import mapping still lands on them.
 

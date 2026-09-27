@@ -18,12 +18,12 @@ import { TIER_COLOR_FILL, TIER_COLOR_NAME } from "@/lib/tier-colors";
 import { cn } from "@/lib/utils";
 import { MAX_TIER_LABEL, MAX_TIERS, TIER_COLORS, type TierColor, type TierDef } from "@/types/list";
 
-/** How long typing pauses before a new name is saved. */
-const RENAME_DELAY_MS = 500;
+/** A tier's name and colour while they're being edited. */
+export type TierDraft = Pick<TierDef, "label" | "color">;
 
 export interface TierEditorActions {
-  onRename: (label: string) => void;
-  onRecolor: (color: TierColor) => void;
+  /** Commits a new name and colour. */
+  onSave: (draft: TierDraft) => void;
   onMove: (delta: -1 | 1) => void;
   onInsert: (where: "above" | "below") => void;
   onDelete: () => void;
@@ -36,13 +36,17 @@ interface TierEditorProps extends TierEditorActions {
   itemCount: number;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Live preview of unsaved changes, so the board's label can show them. Null clears it. */
+  onPreview: (draft: TierDraft | null) => void;
   /** The tier's label cell. It opens the editor. */
   trigger: ReactElement<Record<string, unknown>>;
 }
 
 /**
- * Edits one tier row: name, colour, position, and delete. A popover beside the
- * label on desktop; a bottom sheet on phones.
+ * Edits one tier row. Name and colour are a draft (previewed on the board)
+ * that Save or Enter commits and Cancel, Escape or clicking away discards.
+ * Move, add and delete act at once. A popover beside the label on desktop; a
+ * bottom sheet on phones.
  */
 export function TierEditor({ open, onOpenChange, trigger, ...panel }: TierEditorProps) {
   const desktop = useMediaQuery("(min-width: 640px)");
@@ -81,6 +85,7 @@ interface TierEditorPanelProps extends TierEditorActions {
   tierCount: number;
   itemCount: number;
   autoFocus?: boolean;
+  onPreview: (draft: TierDraft | null) => void;
   onDone: () => void;
 }
 
@@ -90,40 +95,39 @@ function TierEditorPanel({
   tierCount,
   itemCount,
   autoFocus,
+  onPreview,
   onDone,
-  onRename,
-  onRecolor,
+  onSave,
   onMove,
   onInsert,
   onDelete,
 }: TierEditorPanelProps) {
-  const [draft, setDraft] = useState(tier.label);
+  const [label, setLabel] = useState(tier.label);
+  const [color, setColor] = useState<TierColor>(tier.color);
   const [confirming, setConfirming] = useState(false);
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const saved = useRef(tier.label);
 
-  const commit = (value: string) => {
-    clearTimeout(timer.current);
-    const label = value.trim();
-    if (label && label !== saved.current) {
-      saved.current = label;
-      onRename(label);
-    }
+  const trimmed = label.trim();
+  const dirty = (trimmed !== "" && trimmed !== tier.label) || color !== tier.color;
+  const draft = { label: trimmed || tier.label, color };
+
+  // Show the draft on the board's label while editing; clear it when the editor goes away.
+  const preview = useRef(onPreview);
+  useEffect(() => {
+    preview.current = onPreview;
+  });
+  useEffect(() => {
+    preview.current(dirty ? { label: draft.label, color: draft.color } : null);
+  }, [dirty, draft.label, draft.color]);
+  useEffect(() => () => preview.current(null), []);
+
+  /** Commits the name and colour without closing, so row actions don't lose them. */
+  const saveDraft = () => {
+    if (dirty) onSave(draft);
   };
-
-  // Save a pending name if the editor closes mid-pause.
-  const pending = useRef(draft);
-  pending.current = draft;
-  useEffect(
-    () => () => {
-      clearTimeout(timer.current);
-      const label = pending.current.trim();
-      if (label && label !== saved.current) onRename(label);
-    },
-    // Only on unmount. The board's handlers read the latest tiers from a ref, so this one is safe to call late.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
+  const save = () => {
+    saveDraft();
+    onDone();
+  };
 
   const full = tierCount >= MAX_TIERS;
   const deleteTier = () => {
@@ -133,32 +137,26 @@ function TierEditorPanel({
   };
 
   return (
-    <div className="flex flex-col gap-5">
+    <form
+      className="flex flex-col gap-5"
+      onSubmit={(event) => {
+        event.preventDefault();
+        save();
+      }}
+    >
       <div className="flex flex-col gap-2">
         <label htmlFor={`tier-name-${tier.id}`} className="text-xs font-medium text-muted-foreground">
           Name
         </label>
         <Input
           id={`tier-name-${tier.id}`}
-          value={draft}
+          value={label}
           maxLength={MAX_TIER_LABEL}
           autoFocus={autoFocus}
           autoComplete="off"
           onFocus={(event) => event.currentTarget.select()}
-          onChange={(event) => {
-            const value = event.target.value;
-            setDraft(value);
-            clearTimeout(timer.current);
-            timer.current = setTimeout(() => commit(value), RENAME_DELAY_MS);
-          }}
-          onBlur={() => commit(draft)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              commit(draft);
-              onDone();
-            }
-          }}
+          onChange={(event) => setLabel(event.target.value)}
+          aria-invalid={trimmed === ""}
           className="h-10 text-base font-semibold"
         />
       </div>
@@ -166,24 +164,22 @@ function TierEditorPanel({
       <div className="flex flex-col gap-2">
         <span className="text-xs font-medium text-muted-foreground">Colour</span>
         <div className="grid grid-cols-7 gap-2" role="radiogroup" aria-label="Colour">
-          {TIER_COLORS.map((color) => {
-            const selected = tier.color === color;
+          {TIER_COLORS.map((option) => {
+            const selected = color === option;
             return (
               <button
-                key={color}
+                key={option}
                 type="button"
                 role="radio"
                 aria-checked={selected}
-                aria-label={TIER_COLOR_NAME[color]}
-                title={TIER_COLOR_NAME[color]}
-                onClick={() => {
-                  if (!selected) onRecolor(color);
-                }}
+                aria-label={TIER_COLOR_NAME[option]}
+                title={TIER_COLOR_NAME[option]}
+                onClick={() => setColor(option)}
                 className={cn(
                   "flex aspect-square items-center justify-center rounded-full text-black transition-transform outline-none hover:scale-110 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-popover",
                   selected && "ring-2 ring-foreground ring-offset-2 ring-offset-popover",
                 )}
-                style={{ background: TIER_COLOR_FILL[color] }}
+                style={{ background: TIER_COLOR_FILL[option] }}
               >
                 {selected && <Check className="size-3.5" strokeWidth={3} />}
               </button>
@@ -193,19 +189,51 @@ function TierEditorPanel({
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <Button variant="outline" onClick={() => onMove(-1)} disabled={index === 0}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            saveDraft();
+            onMove(-1);
+          }}
+          disabled={index === 0}
+        >
           <ArrowUp />
           Move up
         </Button>
-        <Button variant="outline" onClick={() => onMove(1)} disabled={index === tierCount - 1}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            saveDraft();
+            onMove(1);
+          }}
+          disabled={index === tierCount - 1}
+        >
           <ArrowDown />
           Move down
         </Button>
-        <Button variant="outline" onClick={() => onInsert("above")} disabled={full}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            saveDraft();
+            onInsert("above");
+          }}
+          disabled={full}
+        >
           <BetweenHorizontalStart />
           Add above
         </Button>
-        <Button variant="outline" onClick={() => onInsert("below")} disabled={full}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            saveDraft();
+            onInsert("below");
+          }}
+          disabled={full}
+        >
           <BetweenHorizontalEnd />
           Add below
         </Button>
@@ -219,27 +247,38 @@ function TierEditorPanel({
               {itemCount === 1 ? "item goes" : "items go"} back to Unranked.
             </p>
             <div className="flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setConfirming(false)}>
+              <Button type="button" variant="ghost" onClick={() => setConfirming(false)}>
                 Cancel
               </Button>
-              <Button variant="destructive" onClick={deleteTier}>
+              <Button type="button" variant="destructive" onClick={deleteTier}>
                 <Trash2 />
                 Delete tier
               </Button>
             </div>
           </div>
         ) : (
-          <Button
-            variant="ghost"
-            onClick={deleteTier}
-            disabled={tierCount === 1}
-            className="w-full justify-start text-destructive hover:text-destructive"
-          >
-            <Trash2 />
-            Delete tier
-          </Button>
+          <div className="flex items-center justify-between gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={deleteTier}
+              disabled={tierCount === 1}
+              className="text-destructive hover:text-destructive"
+            >
+              <Trash2 />
+              Delete
+            </Button>
+            <div className="flex gap-2">
+              <Button type="button" variant="ghost" onClick={onDone}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={!dirty}>
+                Save
+              </Button>
+            </div>
+          </div>
         )}
       </div>
-    </div>
+    </form>
   );
 }

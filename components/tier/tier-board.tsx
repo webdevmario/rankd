@@ -21,7 +21,7 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove, rectSortingStrategy, SortableContext, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Plus } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   liftModifier,
@@ -34,7 +34,7 @@ import { groupByTier, newTier, tierZones, UNRANKED, zoneOf, type TierZone } from
 import { cn } from "@/lib/utils";
 import { MAX_TIERS, type Item, type TierDef } from "@/types/list";
 import { TierCard } from "./tier-card";
-import { TierEditor, type TierEditorActions } from "./tier-editor";
+import { TierEditor, type TierDraft, type TierEditorActions } from "./tier-editor";
 import { labelSize } from "./tier-styles";
 
 type ZoneIds = Record<TierZone, string[]>;
@@ -74,6 +74,12 @@ export function TierBoard({ items, tiers, onMove, onEditItem, onTiersChange }: T
   const dropAnimation = useDropAnimation();
 
   const [editingTierId, setEditingTierId] = useState<string | null>(null);
+  // Unsaved name and colour from the open editor, shown on that tier's label.
+  const [preview, setPreview] = useState<(TierDraft & { id: string }) | null>(null);
+  const shown = useMemo(
+    () => tiers.map((tier) => (preview?.id === tier.id ? { ...tier, ...preview } : tier)),
+    [tiers, preview],
+  );
   // Editor callbacks can fire after tiers change (a rename saved as the popover closes), so read the latest.
   const tiersRef = useRef(tiers);
   useEffect(() => {
@@ -84,7 +90,7 @@ export function TierBoard({ items, tiers, onMove, onEditItem, onTiersChange }: T
   const committedIds = useMemo(() => idsByZone(items, tiers), [items, tiers]);
   const zones = useMemo(() => tierZones(tiers), [tiers]);
   // One long name widens every label cell, so the rows stay aligned.
-  const wideLabels = tiers.some((tier) => labelSize(tier.label) === "long");
+  const wideLabels = shown.some((tier) => labelSize(tier.label) === "long");
   const isZone = useCallback((id: UniqueIdentifier): id is string => zones.includes(String(id)), [zones]);
   const zoneLabel = (zone: TierZone | undefined): string => {
     if (!zone) return "nowhere";
@@ -223,11 +229,14 @@ export function TierBoard({ items, tiers, onMove, onEditItem, onTiersChange }: T
     const update = (change: (rows: TierDef[], index: number) => TierDef[]) => {
       const rows = tiersRef.current;
       const index = rows.findIndex((tier) => tier.id === id);
-      if (index !== -1) onTiersChange(change([...rows], index));
+      if (index === -1) return;
+      const next = change([...rows], index);
+      // Saving a draft and then moving happen in one click, before a re-render.
+      tiersRef.current = next;
+      onTiersChange(next);
     };
     return {
-      onRename: (label) => update((rows, i) => rows.map((tier, j) => (j === i ? { ...tier, label } : tier))),
-      onRecolor: (color) => update((rows, i) => rows.map((tier, j) => (j === i ? { ...tier, color } : tier))),
+      onSave: (draft) => update((rows, i) => rows.map((tier, j) => (j === i ? { ...tier, ...draft } : tier))),
       onMove: (delta) =>
         update((rows, i) => {
           const to = i + delta;
@@ -291,8 +300,18 @@ export function TierBoard({ items, tiers, onMove, onEditItem, onTiersChange }: T
                 tierCount={tiers.length}
                 itemCount={ids[tier.id]?.length ?? 0}
                 open={editingTierId === tier.id}
-                onOpenChange={(open) => setEditingTierId(open ? tier.id : null)}
-                trigger={<TierLabel tier={tier} wide={wideLabels} />}
+                onOpenChange={(open) => {
+                  setEditingTierId(open ? tier.id : null);
+                  if (!open) setPreview(null);
+                }}
+                onPreview={(draft) =>
+                  setPreview((prev) =>
+                    draft ? { id: tier.id, ...draft } : prev?.id === tier.id ? null : prev,
+                  )
+                }
+                trigger={
+                  <TierLabel tier={shown[index]} wide={wideLabels} active={editingTierId === tier.id} />
+                }
                 {...tierActions(tier.id)}
               />
             }
@@ -388,26 +407,42 @@ const LABEL_TEXT = {
   long: "text-[10px] font-bold leading-tight sm:text-xs lg:text-sm",
 } as const;
 
-/** A tier's coloured label cell. Pressing it opens the tier editor. */
+/**
+ * A tier's coloured label cell. Pressing it opens the tier editor. Hover (and
+ * an open editor) brightens it, draws an inner ring and shows a pencil; on
+ * touch screens the pencil stays faintly visible.
+ */
 function TierLabel({
   tier,
   wide,
+  active,
   ...props
-}: { tier: TierDef; wide: boolean } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+}: { tier: TierDef; wide: boolean; active: boolean } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
       type="button"
       {...props}
+      data-active={active}
       aria-label={`Edit ${tier.label} tier`}
       title="Edit tier"
       className={cn(
-        "flex shrink-0 items-center justify-center px-1.5 text-center break-words text-black transition-[filter] outline-none hover:brightness-110 focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-inset data-[popup-open]:brightness-110",
+        "group/label relative flex shrink-0 cursor-pointer items-center justify-center px-1.5 text-center break-words text-black transition-[filter] outline-none hover:brightness-110 data-[active=true]:brightness-110",
         wide ? "w-20 sm:w-24 lg:w-28" : "w-12 sm:w-16 lg:w-20",
         LABEL_TEXT[labelSize(tier.label)],
       )}
       style={{ background: TIER_COLOR_FILL[tier.color] }}
     >
       <span className="min-w-0 hyphens-auto">{tier.label}</span>
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0 ring-3 ring-black/0 transition-shadow ring-inset group-hover/label:ring-black/40 group-focus-visible/label:ring-black/60 group-data-[active=true]/label:ring-black/60"
+      />
+      <span
+        aria-hidden
+        className="pointer-events-none absolute top-1 right-1 flex size-4 items-center justify-center rounded-[5px] bg-black/75 text-white opacity-0 shadow-sm transition-opacity group-hover/label:opacity-100 group-focus-visible/label:opacity-100 group-data-[active=true]/label:opacity-100 sm:size-5 [@media(hover:none)]:opacity-60"
+      >
+        <Pencil className="size-2.5 sm:size-3" />
+      </span>
     </button>
   );
 }
