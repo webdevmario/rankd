@@ -28,14 +28,17 @@ Requires **Node 20+** (see `.nvmrc`).
 
 ```bash
 npm install
-npm run dev        # http://localhost:3000
+npm run dev        # http://localhost:3010
 ```
+
+rankd uses port **3010** for both dev and production so it doesn't collide with the other apps on this Mac.
+Stop the production service (`npm run prod:stop`) before running `npm run dev`.
 
 | Script                 | What it does                           |
 | ---------------------- | -------------------------------------- |
-| `npm run dev`          | Dev server on port 3000                |
+| `npm run dev`          | Dev server on port 3010                |
 | `npm run build`        | Production build                       |
-| `npm run start`        | Serve the production build             |
+| `npm run start`        | Serve the production build on 3010     |
 | `npm run lint`         | ESLint (Next + TypeScript)             |
 | `npm run typecheck`    | `tsc --noEmit`                         |
 | `npm run format`       | Prettier (with Tailwind class sorting) |
@@ -43,6 +46,38 @@ npm run dev        # http://localhost:3000
 
 Data lives in your browser's `localStorage` under the key `rankd:v1`. To reset (including the seed list),
 delete that key in devtools and reload.
+
+## Running on the Mac over Tailscale
+
+This follows the same setup as `playoff-picks`, `stacks` and the other apps on this Mac. A launchd agent
+runs `next start` on port 3010, starts it at login and restarts it if it crashes. Next listens on every
+network interface, so any device on the tailnet can reach it directly. No `tailscale serve` is involved.
+
+- On the Mac: http://localhost:3010
+- From the tailnet: http://shady-mac-mini.taila545c3.ts.net:3010 (or http://100.84.244.2:3010)
+
+First-time install:
+
+```bash
+npm run build          # production build → .next/
+npm run prod:install   # copy scripts/com.rankd.plist → ~/Library/LaunchAgents/
+npm run prod:start     # load the launchd job
+npm run prod:status    # PID + last exit code 0
+```
+
+Day to day:
+
+```bash
+npm run prod:deploy    # build + restart (run after code changes)
+npm run prod:restart
+npm run prod:stop
+npm run prod:logs      # /tmp/rankd.log
+npm run prod:errors    # /tmp/rankd-error.log
+```
+
+Because storage is `localStorage`, each browser and each URL (origin) has its own separate lists.
+`localhost:3010` and the tailnet URL don't share data, and neither do your phone and your Mac. A shared
+backend adapter is what fixes that; see [Storage adapters](#storage-adapters).
 
 ## Architecture
 
