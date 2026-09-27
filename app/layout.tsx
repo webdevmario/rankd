@@ -31,7 +31,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className={`${geistSans.variable} ${geistMono.variable} min-h-dvh font-sans antialiased`}>
         <MotionProvider>
           <header className="border-b border-border/70">
-            <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6">
+            <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6 lg:px-8">
               <Link href="/" className="inline-flex flex-col">
                 <span className="text-lg leading-tight font-semibold tracking-tight">
                   rankd<span className="text-primary">.</span>
@@ -40,7 +40,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               </Link>
             </div>
           </header>
-          <main className="mx-auto max-w-3xl px-4 pt-10 pb-24 sm:px-6">{children}</main>
+          <main className="mx-auto max-w-6xl px-4 pt-10 pb-24 sm:px-6 lg:px-8">{children}</main>
           <Toaster position="bottom-center" />
         </MotionProvider>
       </body>

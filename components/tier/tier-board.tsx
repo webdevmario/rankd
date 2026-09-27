@@ -273,7 +273,7 @@ function TierRow({ zone, ids, itemsById, dragging, highlighted, onEditItem }: Ti
         {!unranked && (
           <div
             className={cn(
-              "flex w-12 shrink-0 items-center justify-center text-3xl font-black tracking-tight text-black sm:w-16 sm:text-4xl",
+              "flex w-12 shrink-0 items-center justify-center text-3xl font-black tracking-tight text-black sm:w-16 sm:text-4xl lg:w-20 lg:text-5xl",
               TIER_FILL[zone],
             )}
             aria-hidden
@@ -286,7 +286,7 @@ function TierRow({ zone, ids, itemsById, dragging, highlighted, onEditItem }: Ti
           <ul
             ref={setNodeRef}
             className={cn(
-              "flex min-h-28 min-w-0 flex-1 flex-wrap content-start gap-1.5 p-2 transition-colors duration-150 sm:min-h-32 sm:gap-2",
+              "flex min-h-28 min-w-0 flex-1 flex-wrap content-start gap-1.5 p-2 transition-colors duration-150 sm:min-h-32 sm:gap-2 lg:min-h-40 lg:gap-2.5 lg:p-2.5",
               highlighted && "bg-white/[0.04]",
             )}
           >
@@ -298,7 +298,7 @@ function TierRow({ zone, ids, itemsById, dragging, highlighted, onEditItem }: Ti
               <li
                 aria-hidden
                 className={cn(
-                  "flex min-h-24 flex-1 items-center justify-center rounded-lg border border-dashed text-xs transition-colors sm:min-h-28",
+                  "flex min-h-24 flex-1 items-center justify-center rounded-lg border border-dashed text-xs transition-colors sm:min-h-28 lg:min-h-36",
                   dragging ? "border-white/20 text-muted-foreground" : "border-border text-faint",
                 )}
               >

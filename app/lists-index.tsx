@@ -46,7 +46,7 @@ export function ListsIndex() {
             action={newListButton}
           />
         ) : (
-          <ul className="grid gap-3">
+          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {lists.map((list) => (
               <li key={list.id}>
                 <ListCard list={list} />

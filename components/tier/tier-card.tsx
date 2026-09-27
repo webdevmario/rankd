@@ -30,7 +30,7 @@ export function TierCard({ item, overlay, placeholder, onEdit }: TierCardProps) 
       animate={overlay ? { boxShadow: LIFTED_SHADOW } : { opacity: 1, scale: 1 }}
       transition={spring}
       className={cn(
-        "tier-card group relative w-16 rounded-lg select-none sm:w-20",
+        "tier-card group relative w-16 rounded-lg select-none sm:w-20 lg:w-24",
         overlay ? "cursor-grabbing" : "cursor-grab",
         placeholder && "opacity-30",
       )}
