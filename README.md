@@ -47,6 +47,19 @@ Stop the production service (`npm run prod:stop`) before running `npm run dev`.
 Data lives in your browser's `localStorage` under the key `rankd:v1`. To reset (including the seed list),
 delete that key in devtools and reload.
 
+### Seed data from Stacks
+
+The "Stephen King — Recently Read" list is seeded from `data/king-books.json`. That file was generated from
+the Stacks book log (the Mario profile's Stephen King reads) by a one-time script:
+
+```bash
+npm run import:stacks   # reads ../stacks/.env → Stacks Postgres (read-only) → data/king-books.json
+```
+
+The initial order follows the list's own description, worst to best: ascending Stacks rating, then read
+date. A browser that already has the old empty seed list is filled once on its next load (`SEED_VERSION` in
+`lib/storage/seed.ts`). Deleted lists and lists you've already added items to are never touched.
+
 ## Running on the Mac over Tailscale
 
 This follows the same setup as `playoff-picks`, `stacks` and the other apps on this Mac. A launchd agent
