@@ -1,5 +1,5 @@
 import { LocalStorageAdapter } from "./local-storage-adapter";
-import { seedLists } from "./seed";
+import { backfillSeed, SEED_VERSION, seedLists } from "./seed";
 import type { StorageAdapter } from "./types";
 
 export type { StorageAdapter } from "./types";
@@ -12,6 +12,6 @@ let adapter: StorageAdapter | null = null;
  * localStorage to a hosted backend.
  */
 export function getStorage(): StorageAdapter {
-  adapter ??= new LocalStorageAdapter({ seed: seedLists });
+  adapter ??= new LocalStorageAdapter({ seed: seedLists, seedVersion: SEED_VERSION, backfill: backfillSeed });
   return adapter;
 }

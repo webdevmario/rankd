@@ -5,6 +5,8 @@ export const DEFAULT_STORAGE_KEY = "rankd:v1";
 
 interface Snapshot {
   version: 1;
+  /** Which seed revision this data has seen. Absent on data from before seed versioning (= 1). */
+  seedVersion?: number;
   lists: List[];
 }
 
@@ -13,6 +15,10 @@ export interface LocalStorageAdapterOptions {
   key?: string;
   /** Lists written the first time the key is empty. */
   seed?: () => List[];
+  /** Current seed revision. Stored data with an older revision is passed through `backfill` once. */
+  seedVersion?: number;
+  /** Upgrades lists written under an older seed revision. */
+  backfill?: (lists: List[]) => List[];
 }
 
 /**
@@ -22,10 +28,14 @@ export interface LocalStorageAdapterOptions {
 export class LocalStorageAdapter implements StorageAdapter {
   private readonly key: string;
   private readonly seed?: () => List[];
+  private readonly seedVersion: number;
+  private readonly backfill?: (lists: List[]) => List[];
 
   constructor(options: LocalStorageAdapterOptions = {}) {
     this.key = options.key ?? DEFAULT_STORAGE_KEY;
     this.seed = options.seed;
+    this.seedVersion = options.seedVersion ?? 1;
+    this.backfill = options.backfill;
   }
 
   async getLists(): Promise<List[]> {
@@ -61,18 +71,29 @@ export class LocalStorageAdapter implements StorageAdapter {
     const raw = this.storage.getItem(this.key);
 
     if (raw === null) {
-      const snapshot: Snapshot = { version: 1, lists: this.seed?.() ?? [] };
+      const snapshot: Snapshot = { version: 1, seedVersion: this.seedVersion, lists: this.seed?.() ?? [] };
       this.write(snapshot);
       return snapshot;
     }
 
+    let parsed: Partial<Snapshot> | null = null;
     try {
-      const parsed = JSON.parse(raw) as Partial<Snapshot>;
-      if (parsed.version === 1 && Array.isArray(parsed.lists)) {
-        return { version: 1, lists: parsed.lists };
-      }
+      parsed = JSON.parse(raw) as Partial<Snapshot>;
     } catch {
       // Fall through to the error below.
+    }
+
+    if (parsed?.version === 1 && Array.isArray(parsed.lists)) {
+      if ((parsed.seedVersion ?? 1) >= this.seedVersion) {
+        return { version: 1, seedVersion: parsed.seedVersion, lists: parsed.lists };
+      }
+      const upgraded: Snapshot = {
+        version: 1,
+        seedVersion: this.seedVersion,
+        lists: this.backfill?.(parsed.lists) ?? parsed.lists,
+      };
+      this.write(upgraded);
+      return upgraded;
     }
     throw new Error(`Stored data under "${this.key}" is unreadable. Clear it in devtools to start fresh.`);
   }

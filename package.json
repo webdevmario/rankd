@@ -17,7 +17,8 @@
     "prod:deploy": "npm run build && npm run prod:restart",
     "prod:status": "launchctl list | grep com.rankd",
     "prod:logs": "cat /tmp/rankd.log",
-    "prod:errors": "cat /tmp/rankd-error.log"
+    "prod:errors": "cat /tmp/rankd-error.log",
+    "import:stacks": "node --env-file=../stacks/.env scripts/import-from-stacks.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -38,6 +39,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.5.26",
     "eslint-config-prettier": "^10.1.8",
+    "pg": "^8.23.0",
     "prettier": "^3.9.9",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "tailwindcss": "^4",

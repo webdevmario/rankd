@@ -1,0 +1,137 @@
+{
+  "source": "stacks",
+  "profile": "Mario",
+  "author": "Stephen King",
+  "importedAt": "2026-09-27T14:48:10.039Z",
+  "items": [
+    {
+      "title": "Billy Summers",
+      "description": "Read Aug 2023 · 6/10 in Stacks",
+      "coverImageUrl": "https://covers.openlibrary.org/b/id/14654070-M.jpg",
+      "stacks": {
+        "logId": 547,
+        "bookId": 542,
+        "rating": 6,
+        "favorite": false,
+        "readMonth": 8,
+        "readYear": 2023
+      }
+    },
+    {
+      "title": "The Long Walk",
+      "description": "Read Aug 2026 · 7/10 in Stacks",
+      "coverImageUrl": "https://covers.openlibrary.org/b/id/14653609-M.jpg",
+      "stacks": {
+        "logId": 688,
+        "bookId": 682,
+        "rating": 7,
+        "favorite": false,
+        "readMonth": 8,
+        "readYear": 2026
+      }
+    },
+    {
+      "title": "Firestarter",
+      "description": "Read Sep 2026 · 7/10 in Stacks",
+      "coverImageUrl": "https://covers.openlibrary.org/b/id/12015446-M.jpg",
+      "stacks": {
+        "logId": 689,
+        "bookId": 683,
+        "rating": 7,
+        "favorite": false,
+        "readMonth": 9,
+        "readYear": 2026
+      }
+    },
+    {
+      "title": "11/22/63",
+      "description": "Read Mar 2025 · 8/10 in Stacks",
+      "coverImageUrl": "https://covers.openlibrary.org/b/id/10713447-M.jpg",
+      "stacks": {
+        "logId": 608,
+        "bookId": 603,
+        "rating": 8,
+        "favorite": false,
+        "readMonth": 3,
+        "readYear": 2025
+      }
+    },
+    {
+      "title": "The Outsider (Holly Gibney #1)",
+      "description": "Read Dec 2025 · 8/10 in Stacks",
+      "coverImageUrl": "https://covers.openlibrary.org/b/isbn/9781501180989-M.jpg",
+      "stacks": {
+        "logId": 555,
+        "bookId": 550,
+        "rating": 8,
+        "favorite": false,
+        "readMonth": 12,
+        "readYear": 2025
+      }
+    },
+    {
+      "title": "The Institute",
+      "description": "Read Feb 2026 · 8/10 in Stacks",
+      "coverImageUrl": "https://covers.openlibrary.org/b/id/10712767-M.jpg",
+      "stacks": {
+        "logId": 551,
+        "bookId": 546,
+        "rating": 8,
+        "favorite": false,
+        "readMonth": 2,
+        "readYear": 2026
+      }
+    },
+    {
+      "title": "Under the Dome",
+      "description": "Read Jul 2026 · 8/10 in Stacks",
+      "coverImageUrl": "https://covers.openlibrary.org/b/id/14651549-M.jpg",
+      "stacks": {
+        "logId": 684,
+        "bookId": 678,
+        "rating": 8,
+        "favorite": false,
+        "readMonth": 7,
+        "readYear": 2026
+      }
+    },
+    {
+      "title": "Misery",
+      "description": "Read Sep 2026 · 8/10 in Stacks",
+      "coverImageUrl": "https://covers.openlibrary.org/b/id/8259296-M.jpg",
+      "stacks": {
+        "logId": 691,
+        "bookId": 685,
+        "rating": 8,
+        "favorite": false,
+        "readMonth": 9,
+        "readYear": 2026
+      }
+    },
+    {
+      "title": "It",
+      "description": "Read Aug 2026 · 10/10 in Stacks",
+      "coverImageUrl": "https://covers.openlibrary.org/b/id/8569284-M.jpg",
+      "stacks": {
+        "logId": 687,
+        "bookId": 681,
+        "rating": 10,
+        "favorite": false,
+        "readMonth": 8,
+        "readYear": 2026
+      }
+    },
+    {
+      "title": "Pet Sematary",
+      "description": "Read Sep 2026 · 10/10 in Stacks",
+      "stacks": {
+        "logId": 692,
+        "bookId": 686,
+        "rating": 10,
+        "favorite": false,
+        "readMonth": 9,
+        "readYear": 2026
+      }
+    }
+  ]
+}
