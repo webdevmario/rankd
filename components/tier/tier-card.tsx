@@ -32,22 +32,28 @@ export function TierCard({ item, overlay, placeholder, onEdit }: TierCardProps) 
       className={cn(
         "tier-card group relative w-16 rounded-lg select-none sm:w-20 lg:w-24",
         overlay ? "cursor-grabbing" : "cursor-grab",
-        placeholder && "opacity-30",
       )}
     >
+      {/* While dragging, the slot left behind is an empty outline that marks where the card will land. */}
       <div
         className={cn(
-          "relative aspect-[2/3] overflow-hidden rounded-lg border transition-colors duration-150",
-          overlay ? "border-white/30" : "border-border group-hover:border-border-strong",
+          "relative aspect-[2/3] overflow-hidden rounded-lg transition-colors duration-150",
+          placeholder
+            ? "border-2 border-dashed border-white/30 bg-white/[0.04]"
+            : overlay
+              ? "border border-white/30"
+              : "border border-border group-hover:border-border-strong",
         )}
       >
-        <ItemCover
-          key={item.coverImageUrl}
-          title={item.title}
-          src={item.coverImageUrl}
-          className="size-full"
-        />
-        {item.notes && (
+        {!placeholder && (
+          <ItemCover
+            key={item.coverImageUrl}
+            title={item.title}
+            src={item.coverImageUrl}
+            className="size-full"
+          />
+        )}
+        {item.notes && !placeholder && (
           <span
             className="absolute bottom-1 left-1 size-1.5 rounded-full bg-primary shadow-[0_0_0_2px_rgba(0,0,0,0.6)]"
             aria-hidden
@@ -55,14 +61,20 @@ export function TierCard({ item, overlay, placeholder, onEdit }: TierCardProps) 
         )}
       </div>
 
-      {/* The drag preview is just the cover; the title stays with the slot left behind. */}
+      {/* The drag preview is just the cover. The outline keeps the title's space but hides it. */}
       {!overlay && (
-        <p className="mt-1 truncate text-[11px] leading-tight text-neutral-300" title={item.title}>
+        <p
+          className={cn(
+            "mt-1 truncate text-[11px] leading-tight text-neutral-300",
+            placeholder && "invisible",
+          )}
+          title={item.title}
+        >
           {item.title}
         </p>
       )}
 
-      {onEdit && (
+      {onEdit && !placeholder && (
         <button
           type="button"
           onClick={onEdit}
