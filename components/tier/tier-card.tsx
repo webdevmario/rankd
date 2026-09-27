@@ -55,9 +55,12 @@ export function TierCard({ item, overlay, placeholder, onEdit }: TierCardProps) 
         )}
       </div>
 
-      <p className="mt-1 truncate text-[11px] leading-tight text-neutral-300" title={item.title}>
-        {item.title}
-      </p>
+      {/* The drag preview is just the cover; the title stays with the slot left behind. */}
+      {!overlay && (
+        <p className="mt-1 truncate text-[11px] leading-tight text-neutral-300" title={item.title}>
+          {item.title}
+        </p>
+      )}
 
       {onEdit && (
         <button
