@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TierChip } from "@/components/tier/tier-styles";
 import { sortByRank } from "@/lib/ranking";
 import type { List } from "@/types/list";
 
@@ -25,7 +26,15 @@ export function ListCard({ list }: { list: List }) {
         <ol className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm">
           {top.map((item) => (
             <li key={item.id} className="flex min-w-0 items-baseline gap-1.5">
-              <span className="font-mono text-xs text-accent">{item.rank}</span>
+              {list.rankingMode === "tier" ? (
+                item.tier ? (
+                  <TierChip tier={item.tier} className="self-center" />
+                ) : (
+                  <span className="font-mono text-xs text-faint">–</span>
+                )
+              ) : (
+                <span className="font-mono text-xs text-accent">{item.rank}</span>
+              )}
               <span className="truncate text-neutral-300">{item.title}</span>
             </li>
           ))}

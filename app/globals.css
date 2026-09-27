@@ -10,6 +10,14 @@
   --color-muted: #8f8f8f;
   --color-faint: #5c5c5c;
   --color-danger: #ff5a4f;
+
+  /* Tier palette. A reuses the accent; the rest carry their own colour. */
+  --color-tier-s: #ff4d5e;
+  --color-tier-s-gold: #ffc233;
+  --color-tier-b: #ffd84d;
+  --color-tier-c: #4ade80;
+  --color-tier-d: #5aa9ff;
+  --color-tier-f: #8a8a8a;
 }
 
 @theme inline {
@@ -48,8 +56,18 @@ textarea:focus-visible {
   box-shadow: none;
 }
 
-body:has(.ranked-list[data-dragging="true"]) {
+.tier-board[data-dragging="true"] .tier-card:hover .tier-cover {
+  translate: none;
+}
+
+body:has(.ranked-list[data-dragging="true"]),
+body:has(.tier-board[data-dragging="true"]) {
   cursor: grabbing;
+}
+
+/* Long-press picks a card up on touch; don't let iOS open its image/text callout instead. */
+.tier-card {
+  -webkit-touch-callout: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

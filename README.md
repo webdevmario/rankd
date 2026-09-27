@@ -1,6 +1,7 @@
 # rankd
 
-A personal ranking engine. Make a list, add things, then drag them into the order they deserve.
+A personal ranking engine. Make a list, add things, then drag them into the tier (or the exact order) they
+deserve.
 
 The first list is **Stephen King — Recently Read**, but nothing in the app is specific to books. rankd is
 built as a small, reusable engine: lists and ranks are generic, where data is _stored_ is behind one
@@ -21,6 +22,23 @@ Every ranking is a `List` of `Item`s. Each item has a 1-based `rank`, and ranks 
 
 `ListService` (`lib/lists.ts`) is the engine's public API and ties the three together. Pages and hooks only
 talk to the service.
+
+### Ranking modes
+
+Each list has a `rankingMode`, and a Tier / Linear switch on the list page flips between them. Both views
+read the same data.
+
+- **`tier`** (the default): S, A, B, C, D and F rows plus an **Unranked** pool, where new items land. Drag
+  cards between rows or within a row. Each item's `tier` is stored on the item; no tier means unranked.
+- **`linear`**: the original numbered list you drag to reorder.
+
+`rank` is always the order you'd read the tier board in: S row left to right, then A, and so on down to F,
+then Unranked. Every tier move re-ranks in that order (`lib/tiers.ts`), so the linear view always matches
+the board. Reordering in the linear view changes `rank` but not tiers.
+
+**Migration.** Lists saved before ranking modes existed become tier lists the first time they're loaded
+(`lib/storage/migrations.ts`). Any "X/10" rating in an item's notes, or failing that its description, places
+the item: 9–10 → S, 8 → A, 7 → B, 6 → C, 5 → D, 4 or below → F. Items with no rating go to Unranked.
 
 ## Running locally
 

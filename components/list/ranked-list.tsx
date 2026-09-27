@@ -2,7 +2,6 @@
 
 import {
   closestCenter,
-  defaultDropAnimationSideEffects,
   DndContext,
   DragOverlay,
   KeyboardSensor,
@@ -13,46 +12,19 @@ import {
   type DragEndEvent,
   type DragOverEvent,
   type DragStartEvent,
-  type DropAnimation,
-  type Modifier,
   type UniqueIdentifier,
 } from "@dnd-kit/core";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
+import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useMemo, useState } from "react";
 import type { Item, ItemPatch } from "@/types/list";
+import { liftModifier, OVERLAY_STYLE, unliftedKeyboardCoordinates, useDropAnimation } from "./drag-effects";
 import { ItemCard } from "./item-card";
 
 const LIFT_SCALE = 1.02;
-
-/**
- * Scales the drag overlay up slightly. The overlay's transform-origin is its
- * top-left corner (so dnd-kit's drop animation lands exactly), so we offset by
- * half the growth to keep the scale visually centred.
- */
-const lift: Modifier = ({ transform, activeNodeRect }) => {
-  if (!activeNodeRect) return transform;
-  return {
-    ...transform,
-    x: transform.x - (activeNodeRect.width * (LIFT_SCALE - 1)) / 2,
-    y: transform.y - (activeNodeRect.height * (LIFT_SCALE - 1)) / 2,
-    scaleX: LIFT_SCALE,
-    scaleY: LIFT_SCALE,
-  };
-};
-
-/** Overshooting ease → the card springs back into its slot and scale settles to 1. */
-const dropAnimation: DropAnimation = {
-  duration: 340,
-  easing: "cubic-bezier(0.34, 1.56, 0.64, 1)",
-  sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: "0" } } }),
-};
+const lift = liftModifier(LIFT_SCALE);
+const keyboardCoordinates = unliftedKeyboardCoordinates(LIFT_SCALE);
 
 const screenReaderInstructions = {
   draggable:
@@ -69,10 +41,11 @@ interface RankedListProps {
 export function RankedList({ items, onReorder, onUpdateItem, onRemoveItem }: RankedListProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
+  const dropAnimation = useDropAnimation();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(KeyboardSensor, { coordinateGetter: keyboardCoordinates }),
   );
 
   const ids = useMemo(() => items.map((item) => item.id), [items]);
@@ -127,12 +100,7 @@ export function RankedList({ items, onReorder, onUpdateItem, onRemoveItem }: Ran
         </ol>
       </SortableContext>
 
-      <DragOverlay
-        adjustScale
-        modifiers={[lift]}
-        dropAnimation={dropAnimation}
-        style={{ transformOrigin: "0 0" }}
-      >
+      <DragOverlay adjustScale modifiers={[lift]} dropAnimation={dropAnimation} style={OVERLAY_STYLE}>
         {activeItem ? <ItemCard item={activeItem} rank={rankOf(overId ?? activeItem.id)} overlay /> : null}
       </DragOverlay>
     </DndContext>

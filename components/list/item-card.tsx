@@ -5,6 +5,7 @@ import { useState, type HTMLAttributes, type Ref } from "react";
 import { GripIcon, TrashIcon } from "@/components/icons";
 import { cn } from "@/lib/cn";
 import type { Item, ItemPatch } from "@/types/list";
+import { TierChip } from "@/components/tier/tier-styles";
 import { CoverThumb } from "./cover-thumb";
 import { NotesEditor } from "./notes-editor";
 
@@ -82,7 +83,10 @@ export function ItemCard({
       <div className="min-w-0 flex-1 pt-1.5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 className="truncate leading-snug font-semibold text-white">{item.title}</h3>
+            <div className="flex min-w-0 items-center gap-2">
+              {item.tier && <TierChip tier={item.tier} />}
+              <h3 className="truncate leading-snug font-semibold text-white">{item.title}</h3>
+            </div>
             {item.description && <p className="mt-0.5 truncate text-sm text-muted">{item.description}</p>}
           </div>
 

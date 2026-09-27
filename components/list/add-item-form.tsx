@@ -11,12 +11,13 @@ import type { NewItem } from "@/types/list";
 const EMPTY = { title: "", description: "", coverImageUrl: "", notes: "" };
 
 interface AddItemFormProps {
-  nextRank: number;
+  /** Where a new item will appear, e.g. "lands in Unranked". */
+  landingLabel: string;
   autoFocus?: boolean;
   onAdd: (input: NewItem) => Promise<unknown>;
 }
 
-export function AddItemForm({ nextRank, autoFocus, onAdd }: AddItemFormProps) {
+export function AddItemForm({ landingLabel, autoFocus, onAdd }: AddItemFormProps) {
   const id = useId();
   const [values, setValues] = useState(EMPTY);
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +71,7 @@ export function AddItemForm({ nextRank, autoFocus, onAdd }: AddItemFormProps) {
         <h2 id={`${id}-heading`} className="text-sm font-semibold text-white">
           Add an item
         </h2>
-        <span className="font-mono text-xs text-faint">lands at #{nextRank}</span>
+        <span className="font-mono text-xs text-faint">{landingLabel}</span>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">

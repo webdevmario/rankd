@@ -1,6 +1,6 @@
 import kingBooks from "@/data/king-books.json";
 import { createId, now } from "@/lib/id";
-import { assignRanks } from "@/lib/ranking";
+import { flattenTiers, groupByTier, tierFromRating } from "@/lib/tiers";
 import type { Item, List } from "@/types/list";
 
 /**
@@ -14,16 +14,17 @@ export const SEED_VERSION = 2;
 
 const KING_TITLE = "Stephen King — Recently Read";
 
+/** The Stacks import, pre-placed on the tier board by each book's Stacks rating. */
 function kingItems(): Item[] {
-  return assignRanks(
-    kingBooks.items.map(({ title, description, coverImageUrl }) => ({
-      id: createId(),
-      rank: 0,
-      title,
-      description,
-      ...(coverImageUrl ? { coverImageUrl } : {}),
-    })),
-  );
+  const items = kingBooks.items.map(({ title, description, coverImageUrl, stacks }, index) => ({
+    id: createId(),
+    rank: index + 1,
+    title,
+    description,
+    ...(coverImageUrl ? { coverImageUrl } : {}),
+    tier: tierFromRating(stacks.rating),
+  }));
+  return flattenTiers(groupByTier(items));
 }
 
 /** Lists created on first run. */
@@ -35,6 +36,7 @@ export function seedLists(): List[] {
       title: KING_TITLE,
       description: "Ranking my most recent reads, worst to best (well, favorite last).",
       itemSourceType: "manual",
+      rankingMode: "tier",
       createdAt: timestamp,
       updatedAt: timestamp,
       items: kingItems(),

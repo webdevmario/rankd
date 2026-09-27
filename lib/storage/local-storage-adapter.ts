@@ -1,4 +1,5 @@
 import type { List } from "@/types/list";
+import { migrateList, type StoredList } from "./migrations";
 import type { StorageAdapter } from "./types";
 
 export const DEFAULT_STORAGE_KEY = "rankd:v1";
@@ -84,16 +85,19 @@ export class LocalStorageAdapter implements StorageAdapter {
     }
 
     if (parsed?.version === 1 && Array.isArray(parsed.lists)) {
-      if ((parsed.seedVersion ?? 1) >= this.seedVersion) {
-        return { version: 1, seedVersion: parsed.seedVersion, lists: parsed.lists };
+      const stored = parsed.lists as StoredList[];
+      let lists = stored.map(migrateList);
+      let changed = lists.some((list, index) => list !== stored[index]);
+
+      const seedVersion = parsed.seedVersion ?? 1;
+      if (seedVersion < this.seedVersion && this.backfill) {
+        lists = this.backfill(lists);
+        changed = true;
       }
-      const upgraded: Snapshot = {
-        version: 1,
-        seedVersion: this.seedVersion,
-        lists: this.backfill?.(parsed.lists) ?? parsed.lists,
-      };
-      this.write(upgraded);
-      return upgraded;
+
+      const snapshot: Snapshot = { version: 1, seedVersion: Math.max(seedVersion, this.seedVersion), lists };
+      if (changed || seedVersion !== snapshot.seedVersion) this.write(snapshot);
+      return snapshot;
     }
     throw new Error(`Stored data under "${this.key}" is unreadable. Clear it in devtools to start fresh.`);
   }

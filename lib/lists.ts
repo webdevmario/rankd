@@ -3,7 +3,16 @@ import { moveItem, patchItem, removeItem } from "@/lib/ranking";
 import { createSource, type ItemSource } from "@/lib/sources";
 import { getStorage, type StorageAdapter } from "@/lib/storage";
 import { cleanItemPatch, cleanOptional } from "@/lib/text";
-import type { Item, ItemPatch, List, ListPatch, NewItem, NewList } from "@/types/list";
+import { moveToTier, type TierZone } from "@/lib/tiers";
+import {
+  RANKING_MODES,
+  type Item,
+  type ItemPatch,
+  type List,
+  type ListPatch,
+  type NewItem,
+  type NewList,
+} from "@/types/list";
 
 /**
  * The ranking engine's public API. UI code talks to this service; it
@@ -34,6 +43,7 @@ export class ListService {
       title,
       description: cleanOptional(input.description),
       itemSourceType: input.itemSourceType ?? "manual",
+      rankingMode: input.rankingMode ?? "tier",
       createdAt: timestamp,
       updatedAt: timestamp,
       items: [],
@@ -49,6 +59,11 @@ export class ListService {
       next.title = title;
     }
     if ("description" in patch) next.description = cleanOptional(patch.description);
+    if (patch.rankingMode !== undefined) {
+      if (!RANKING_MODES.includes(patch.rankingMode))
+        throw new Error(`Unknown ranking mode "${patch.rankingMode}".`);
+      next.rankingMode = patch.rankingMode;
+    }
     return this.commit(next);
   }
 
@@ -75,6 +90,12 @@ export class ListService {
   async reorderItems(listId: string, activeId: string, overId: string): Promise<List> {
     const list = await this.requireList(listId);
     return this.commit({ ...list, items: moveItem(list.items, activeId, overId) });
+  }
+
+  /** Places an item in a tier (or the unranked pool) at `index` within that zone. */
+  async moveItemToTier(listId: string, itemId: string, zone: TierZone, index: number): Promise<List> {
+    const list = await this.requireList(listId);
+    return this.commit({ ...list, items: moveToTier(list.items, itemId, zone, index) });
   }
 
   private sourceFor(list: List): ItemSource {

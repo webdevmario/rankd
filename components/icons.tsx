@@ -79,6 +79,32 @@ export function ImageIcon(props: IconProps) {
   );
 }
 
+export function PencilIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4zM13.5 6.5l4 4" />
+    </Icon>
+  );
+}
+
+export function CloseIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M6 6l12 12M18 6 6 18" />
+    </Icon>
+  );
+}
+
+export function TiersIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect x="3" y="4" width="18" height="4" rx="1" />
+      <rect x="3" y="10" width="18" height="4" rx="1" />
+      <rect x="3" y="16" width="18" height="4" rx="1" />
+    </Icon>
+  );
+}
+
 export function ListIcon(props: IconProps) {
   return (
     <Icon {...props}>

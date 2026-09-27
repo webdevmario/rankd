@@ -13,14 +13,29 @@ export const ITEM_SOURCE_TYPES = ["manual", "stack-api", "csv-import"] as const;
 
 export type ItemSourceType = (typeof ITEM_SOURCE_TYPES)[number];
 
+/** How a list is ranked and displayed. Both views share the same underlying order. */
+export const RANKING_MODES = ["tier", "linear"] as const;
+
+export type RankingMode = (typeof RANKING_MODES)[number];
+
+/** Tiers from best to worst. */
+export const TIERS = ["S", "A", "B", "C", "D", "F"] as const;
+
+export type Tier = (typeof TIERS)[number];
+
 export interface Item {
   id: string;
   title: string;
   description?: string;
   coverImageUrl?: string;
   notes?: string;
-  /** 1-based position within the list. Ranks are always contiguous. */
+  /**
+   * 1-based position within the list. Ranks are always contiguous. In tier
+   * mode this is reading order across the board: S → F, then unranked.
+   */
   rank: number;
+  /** Absent means unranked (the pool below the tiers). */
+  tier?: Tier;
 }
 
 export interface List {
@@ -28,6 +43,7 @@ export interface List {
   title: string;
   description?: string;
   itemSourceType: ItemSourceType;
+  rankingMode: RankingMode;
   /** ISO 8601 timestamp. */
   createdAt: string;
   /** ISO 8601 timestamp. */
@@ -36,7 +52,7 @@ export interface List {
 }
 
 /** Fields a caller supplies when adding an item; id and rank are assigned by the engine. */
-export type NewItem = Omit<Item, "id" | "rank">;
+export type NewItem = Omit<Item, "id" | "rank" | "tier">;
 
 export type ItemPatch = Partial<NewItem>;
 
@@ -44,6 +60,7 @@ export interface NewList {
   title: string;
   description?: string;
   itemSourceType?: ItemSourceType;
+  rankingMode?: RankingMode;
 }
 
-export type ListPatch = Partial<Pick<List, "title" | "description">>;
+export type ListPatch = Partial<Pick<List, "title" | "description" | "rankingMode">>;

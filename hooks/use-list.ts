@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { getListService } from "@/lib/lists";
 import { appendItem, moveItem, patchItem, removeItem } from "@/lib/ranking";
 import { cleanItemPatch } from "@/lib/text";
-import type { ItemPatch, List, ListPatch, NewItem } from "@/types/list";
+import { moveToTier as placeInTier, type TierZone } from "@/lib/tiers";
+import type { ItemPatch, List, ListPatch, NewItem, RankingMode } from "@/types/list";
 
 type Status = "loading" | "ready" | "not-found" | "error";
 
@@ -55,6 +56,24 @@ export function useList(id: string) {
     [id, optimistic],
   );
 
+  const moveToTier = useCallback(
+    (itemId: string, zone: TierZone, index: number) =>
+      optimistic(
+        (list) => ({ ...list, items: placeInTier(list.items, itemId, zone, index) }),
+        () => getListService().moveItemToTier(id, itemId, zone, index),
+      ),
+    [id, optimistic],
+  );
+
+  const setRankingMode = useCallback(
+    (rankingMode: RankingMode) =>
+      optimistic(
+        (list) => ({ ...list, rankingMode }),
+        () => getListService().updateList(id, { rankingMode }),
+      ),
+    [id, optimistic],
+  );
+
   const updateItem = useCallback(
     (itemId: string, patch: ItemPatch) =>
       optimistic(
@@ -98,6 +117,8 @@ export function useList(id: string) {
   return {
     ...state,
     reorder,
+    moveToTier,
+    setRankingMode,
     addItem,
     updateItem,
     deleteItem,
