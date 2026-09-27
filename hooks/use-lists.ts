@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { getListService } from "@/lib/lists";
 import type { List, NewList } from "@/types/list";
+import { useRefetchOnFocus } from "./use-refetch-on-focus";
 
 type Status = "loading" | "ready" | "error";
 
@@ -10,18 +11,21 @@ export function useLists() {
   const [lists, setLists] = useState<List[]>([]);
   const [status, setStatus] = useState<Status>("loading");
 
-  useEffect(() => {
-    getListService()
-      .getLists()
-      .then((result) => {
-        setLists(result);
-        setStatus("ready");
-      })
-      .catch((error: unknown) => {
-        console.error(error);
-        setStatus("error");
-      });
+  const load = useCallback(async () => {
+    try {
+      setLists(await getListService().getLists());
+      setStatus("ready");
+    } catch (error) {
+      console.error(error);
+      setStatus("error");
+    }
   }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  useRefetchOnFocus(load);
 
   const createList = useCallback(async (input: NewList) => {
     const list = await getListService().createList(input);
@@ -29,5 +33,5 @@ export function useLists() {
     return list;
   }, []);
 
-  return { lists, status, createList };
+  return { lists, status, createList, reload: load };
 }

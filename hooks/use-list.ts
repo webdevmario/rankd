@@ -1,11 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { getListService } from "@/lib/lists";
 import { appendItem, moveItem, patchItem, removeItem } from "@/lib/ranking";
-import { cleanItemPatch } from "@/lib/text";
+import { cleanItemPatch, saveErrorMessage } from "@/lib/text";
 import { moveToTier as placeInTier, type TierZone } from "@/lib/tiers";
 import type { ItemPatch, List, ListPatch, NewItem, RankingMode } from "@/types/list";
+import { useRefetchOnFocus } from "./use-refetch-on-focus";
 
 type Status = "loading" | "ready" | "not-found" | "error";
 
@@ -36,11 +38,14 @@ export function useList(id: string) {
     void load();
   }, [load]);
 
+  useRefetchOnFocus(load);
+
   const optimistic = useCallback(
     (apply: (list: List) => List, persist: () => Promise<unknown>) => {
       setState((prev) => (prev.list ? { ...prev, list: apply(prev.list) } : prev));
       persist().catch((error: unknown) => {
         console.error(error);
+        toast.error(saveErrorMessage(error, "Couldn't save that change. The list was reloaded."));
         void load();
       });
     },
@@ -83,6 +88,16 @@ export function useList(id: string) {
     [id, optimistic],
   );
 
+  /** Like `updateItem`, but waits for the save so a form can report failures (e.g. storage full). */
+  const saveItem = useCallback(
+    async (itemId: string, patch: ItemPatch) => {
+      const list = await getListService().updateItem(id, itemId, patch);
+      setState({ status: "ready", list });
+      return list;
+    },
+    [id],
+  );
+
   const deleteItem = useCallback(
     (itemId: string) =>
       optimistic(
@@ -121,6 +136,7 @@ export function useList(id: string) {
     setRankingMode,
     addItem,
     updateItem,
+    saveItem,
     deleteItem,
     updateDetails,
     deleteList,

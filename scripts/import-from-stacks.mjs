@@ -2,7 +2,7 @@
 /**
  * One-time import: reads a profile's Stephen King reads from the Stacks
  * Postgres database and writes them to data/king-books.json, which seeds the
- * "Stephen King — Recently Read" list.
+ * "Stephen King: Recently Read" list.
  *
  *   npm run import:stacks
  *
@@ -51,10 +51,9 @@ try {
 
   const items = rows.map((row) => {
     const read = `Read ${MONTHS[row.read_month - 1]} ${row.read_year}`;
-    const rating = row.rating != null ? ` · ${row.rating}/10 in Stacks` : "";
     return {
       title: row.title,
-      description: `${read}${rating}`,
+      description: read,
       ...(row.cover_url ? { coverImageUrl: row.cover_url } : {}),
       stacks: {
         logId: row.log_id,
@@ -76,7 +75,9 @@ try {
   };
   await writeFile(OUT, `${JSON.stringify(payload, null, 2)}\n`);
   console.log(`Wrote ${items.length} items to data/king-books.json:`);
-  items.forEach((item, i) => console.log(`  ${i + 1}. ${item.title} — ${item.description}`));
+  items.forEach((item, i) =>
+    console.log(`  ${i + 1}. ${item.title}: ${item.description} (${item.stacks.rating}/10)`),
+  );
 } finally {
   await client.end();
 }

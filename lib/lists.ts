@@ -67,6 +67,11 @@ export class ListService {
     return this.commit(next);
   }
 
+  /** Saves a whole list as-is (ids, ranks, tiers, timestamps), replacing any list with the same id. */
+  async importList(list: List): Promise<List> {
+    return this.storage.saveList(list);
+  }
+
   async deleteList(id: string): Promise<void> {
     await this.storage.deleteList(id);
   }

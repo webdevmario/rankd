@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import { MotionProvider } from "@/components/motion-provider";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -26,18 +27,21 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <body className={`${geistSans.variable} ${geistMono.variable} min-h-dvh font-sans antialiased`}>
         <MotionProvider>
-          <header className="border-b border-line/70">
-            <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4 sm:px-6">
-              <Link href="/" className="text-lg font-semibold tracking-tight text-white">
-                rankd<span className="text-accent">.</span>
+          <header className="border-b border-border/70">
+            <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6">
+              <Link href="/" className="inline-flex flex-col">
+                <span className="text-lg leading-tight font-semibold tracking-tight">
+                  rankd<span className="text-primary">.</span>
+                </span>
+                <span className="text-xs text-faint">rank anything</span>
               </Link>
-              <span className="text-xs text-faint">personal ranking engine</span>
             </div>
           </header>
           <main className="mx-auto max-w-3xl px-4 pt-10 pb-24 sm:px-6">{children}</main>
+          <Toaster position="bottom-center" />
         </MotionProvider>
       </body>
     </html>

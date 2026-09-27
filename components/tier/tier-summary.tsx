@@ -1,25 +1,29 @@
-import { cn } from "@/lib/cn";
+import { cn } from "@/lib/utils";
 import { tierCounts, UNRANKED } from "@/lib/tiers";
 import { TIERS, type Item } from "@/types/list";
-import { TIER_TEXT } from "./tier-styles";
+import { TierChip } from "./tier-styles";
 
-/** "10 items · 2 in S · 5 in A · Unranked: 0" — empty tiers are skipped. */
+/** One chip and count per tier, in board order, then the unranked count. Empty tiers are dimmed. */
 export function TierSummary({ items, className }: { items: Item[]; className?: string }) {
   const counts = tierCounts(items);
 
   return (
-    <p
-      className={cn("flex flex-wrap items-baseline gap-x-2 gap-y-1 font-mono text-xs text-faint", className)}
+    <dl
+      aria-label="Items per tier"
+      className={cn("flex flex-wrap items-center gap-x-3.5 gap-y-2 text-sm tabular-nums", className)}
     >
-      <span>
-        {items.length} {items.length === 1 ? "item" : "items"}
-      </span>
-      {TIERS.filter((tier) => counts[tier] > 0).map((tier) => (
-        <span key={tier}>
-          · {counts[tier]} in <span className={cn("font-bold", TIER_TEXT[tier])}>{tier}</span>
-        </span>
+      {TIERS.map((tier) => (
+        <div key={tier} className={cn("flex items-center gap-1.5", counts[tier] === 0 && "opacity-35")}>
+          <dt>
+            <TierChip tier={tier} />
+          </dt>
+          <dd className="font-semibold text-foreground">{counts[tier]}</dd>
+        </div>
       ))}
-      <span className={cn(counts[UNRANKED] > 0 && "text-muted")}>· Unranked: {counts[UNRANKED]}</span>
-    </p>
+      <div className="flex items-center gap-1.5 border-l border-border pl-3.5">
+        <dt className="text-muted-foreground">Unranked</dt>
+        <dd className="font-semibold text-foreground">{counts[UNRANKED]}</dd>
+      </div>
+    </dl>
   );
 }

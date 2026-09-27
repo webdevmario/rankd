@@ -1,19 +1,46 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * rankd is dark only. <html> carries the `dark` class so shadcn's `dark:` variants apply,
+ * and the palette below is the one source of colour: shadcn's semantic tokens plus a few
+ * rankd extras (faint text, a stronger border, the tier colours).
+ */
+:root {
+  --radius: 0.625rem;
+
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: #0c0c0c;
+  --card-foreground: #ffffff;
+  --popover: #0c0c0c;
+  --popover-foreground: #ffffff;
+  /* The one accent colour: primary buttons, rank numbers, focus rings. */
+  --primary: #ff7a1a;
+  --primary-foreground: #000000;
+  --secondary: #141414;
+  --secondary-foreground: #ffffff;
+  --muted: #141414;
+  --muted-foreground: #8f8f8f;
+  --accent: #1a1a1a;
+  --accent-foreground: #ffffff;
+  --destructive: #ff5a4f;
+  --border: #222222;
+  --input: #2a2a2a;
+  --ring: #ff7a1a;
+
+  --border-strong: #3a3a3a;
+  --faint: #5c5c5c;
+}
 
 @theme {
-  --color-accent: #ff7a1a;
-  --color-accent-hover: #ff9142;
-  --color-surface: #0c0c0c;
-  --color-surface-raised: #141414;
-  --color-line: #222222;
-  --color-line-strong: #3a3a3a;
-  --color-muted: #8f8f8f;
-  --color-faint: #5c5c5c;
-  --color-danger: #ff5a4f;
-
-  /* Tier palette. A reuses the accent; the rest carry their own colour. */
+  /* Tier palette. S blends red into gold; the rest are solid. */
   --color-tier-s: #ff4d5e;
   --color-tier-s-gold: #ffc233;
+  --color-tier-a: #ff7a1a;
   --color-tier-b: #ffd84d;
   --color-tier-c: #4ade80;
   --color-tier-d: #5aa9ff;
@@ -23,41 +50,56 @@
 @theme inline {
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-heading: var(--font-sans);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-faint: var(--faint);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-html {
-  color-scheme: dark;
-  background: #000;
-}
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
 
-body {
-  background: #000;
-  color: #fff;
-}
+  html {
+    @apply bg-background font-sans;
+    color-scheme: dark;
+  }
 
-::selection {
-  background: color-mix(in oklab, var(--color-accent) 40%, transparent);
-  color: #fff;
-}
+  body {
+    @apply bg-background text-foreground;
+  }
 
-:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
-}
-
-input:focus-visible,
-textarea:focus-visible {
-  outline: none;
-}
-
-/* While an item is being dragged, other cards shouldn't react to hover. */
-.ranked-list[data-dragging="true"] .item-card:hover {
-  translate: none;
-  box-shadow: none;
-}
-
-.tier-board[data-dragging="true"] .tier-card:hover .tier-cover {
-  translate: none;
+  ::selection {
+    background: color-mix(in oklab, var(--primary) 40%, transparent);
+    color: var(--foreground);
+  }
 }
 
 body:has(.ranked-list[data-dragging="true"]),

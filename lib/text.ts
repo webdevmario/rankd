@@ -1,3 +1,4 @@
+import { StorageRequestError } from "@/lib/storage/http-storage-adapter";
 import type { ItemPatch, NewItem } from "@/types/list";
 
 /** Trims a string and collapses empty values to `undefined` so they drop out of JSON. */
@@ -37,4 +38,15 @@ export function isHttpUrl(value: string): boolean {
   } catch {
     return false;
   }
+}
+
+/** A cover the app can show: a web URL, or a photo uploaded from the device (stored as a data URL). */
+export function isCoverSrc(value: string): boolean {
+  return isHttpUrl(value) || value.startsWith("data:image/");
+}
+
+/** A readable message for a failed save: the API's reason when it rejected the data, otherwise `fallback`. */
+export function saveErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof StorageRequestError && error.status >= 400 && error.status < 500) return error.message;
+  return fallback;
 }

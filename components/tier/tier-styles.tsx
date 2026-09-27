@@ -1,10 +1,10 @@
-import { cn } from "@/lib/cn";
+import { cn } from "@/lib/utils";
 import type { Tier } from "@/types/list";
 
 /** Solid badge fill per tier; text on top is always black. */
 export const TIER_FILL: Record<Tier, string> = {
   S: "bg-linear-to-br from-tier-s to-tier-s-gold",
-  A: "bg-accent",
+  A: "bg-tier-a",
   B: "bg-tier-b",
   C: "bg-tier-c",
   D: "bg-tier-d",
@@ -14,7 +14,7 @@ export const TIER_FILL: Record<Tier, string> = {
 /** Text colour per tier, for counts and inline mentions. */
 export const TIER_TEXT: Record<Tier, string> = {
   S: "text-tier-s",
-  A: "text-accent",
+  A: "text-tier-a",
   B: "text-tier-b",
   C: "text-tier-c",
   D: "text-tier-d",

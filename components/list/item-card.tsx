@@ -1,13 +1,12 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useState, type HTMLAttributes, type Ref } from "react";
-import { GripIcon, TrashIcon } from "@/components/icons";
-import { cn } from "@/lib/cn";
-import type { Item, ItemPatch } from "@/types/list";
+import type { HTMLAttributes, Ref } from "react";
+import { GripVertical, Pencil } from "lucide-react";
+import { ItemCover } from "@/components/item-cover";
 import { TierChip } from "@/components/tier/tier-styles";
-import { CoverThumb } from "./cover-thumb";
-import { NotesEditor } from "./notes-editor";
+import { cn } from "@/lib/utils";
+import type { Item } from "@/types/list";
 
 export interface DragHandleProps extends HTMLAttributes<HTMLButtonElement> {
   ref?: Ref<HTMLButtonElement>;
@@ -21,46 +20,25 @@ interface ItemCardProps {
   placeholder?: boolean;
   /** Rendered inside the drag overlay, following the pointer. */
   overlay?: boolean;
-  onUpdate?: (patch: ItemPatch) => void;
-  onRemove?: () => void;
+  onEdit?: () => void;
 }
 
 const spring = { type: "spring", stiffness: 520, damping: 34 } as const;
 const RESTING_SHADOW = "0px 0px 0px -16px rgba(0,0,0,0), 0px 0px 0px 0px rgba(255,122,26,0)";
 const LIFTED_SHADOW = "0px 24px 48px -16px rgba(0,0,0,0.95), 0px 0px 0px 1px rgba(255,122,26,0.35)";
 
-export function ItemCard({
-  item,
-  rank,
-  handleProps,
-  placeholder,
-  overlay,
-  onUpdate,
-  onRemove,
-}: ItemCardProps) {
-  const [confirmingRemove, setConfirmingRemove] = useState(false);
-  const [removing, setRemoving] = useState(false);
-
+export function ItemCard({ item, rank, handleProps, placeholder, overlay, onEdit }: ItemCardProps) {
   return (
     <motion.div
       initial={overlay ? { boxShadow: RESTING_SHADOW } : { opacity: 0, y: 8 }}
-      animate={
-        removing
-          ? { opacity: 0, x: -24 }
-          : overlay
-            ? { boxShadow: LIFTED_SHADOW }
-            : { opacity: 1, y: 0, x: 0 }
-      }
-      transition={removing ? { duration: 0.18, ease: "easeIn" } : spring}
-      onAnimationComplete={() => {
-        if (removing) onRemove?.();
-      }}
+      animate={overlay ? { boxShadow: LIFTED_SHADOW } : { opacity: 1, y: 0 }}
+      transition={spring}
       className={cn(
-        "item-card group relative flex items-start gap-2 rounded-xl border bg-surface p-3 pr-4 sm:gap-3",
+        "item-card group relative flex items-start gap-2 rounded-xl border bg-card p-3 sm:gap-3",
         overlay
-          ? "cursor-grabbing border-accent/40 bg-surface-raised"
-          : "border-line transition-[translate,border-color,background-color,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-line-strong hover:bg-surface-raised hover:shadow-[0_10px_30px_-18px_rgba(0,0,0,1)]",
-        placeholder && "border-dashed border-accent/30 bg-transparent opacity-40",
+          ? "cursor-grabbing border-primary/40 bg-muted"
+          : "border-border transition-colors duration-150 hover:border-border-strong hover:bg-muted",
+        placeholder && "border-dashed border-primary/30 bg-transparent opacity-40",
       )}
     >
       <button
@@ -68,61 +46,60 @@ export function ItemCard({
         aria-label={`Reorder ${item.title}`}
         {...handleProps}
         className={cn(
-          "-ml-1 flex h-10 w-7 shrink-0 touch-none items-center justify-center rounded-md text-faint transition-colors",
-          "hover:bg-white/5 hover:text-white focus-visible:text-white",
-          overlay ? "cursor-grabbing text-accent" : "cursor-grab active:cursor-grabbing",
+          "-ml-1 flex h-16 w-7 shrink-0 touch-none items-center justify-center rounded-md text-faint transition-colors",
+          "hover:bg-white/5 hover:text-foreground focus-visible:text-foreground",
+          overlay ? "cursor-grabbing text-primary" : "cursor-grab active:cursor-grabbing",
         )}
       >
-        <GripIcon />
+        <GripVertical className="size-4" />
       </button>
 
       <RankNumber rank={rank} />
 
-      {item.coverImageUrl && <CoverThumb key={item.coverImageUrl} src={item.coverImageUrl} />}
+      <button
+        type="button"
+        onClick={onEdit}
+        disabled={!onEdit}
+        aria-label={`Edit ${item.title}`}
+        className="flex min-w-0 flex-1 items-start gap-3 rounded-lg text-left"
+      >
+        <ItemCover
+          key={item.coverImageUrl}
+          title={item.title}
+          src={item.coverImageUrl}
+          className="h-16 w-11 rounded-md border border-border"
+          initialsClassName="text-sm"
+        />
 
-      <div className="min-w-0 flex-1 pt-1.5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex min-w-0 items-center gap-2">
-              {item.tier && <TierChip tier={item.tier} />}
-              <h3 className="truncate leading-snug font-semibold text-white">{item.title}</h3>
-            </div>
-            {item.description && <p className="mt-0.5 truncate text-sm text-muted">{item.description}</p>}
+        <div className="min-w-0 flex-1 pt-1">
+          <div className="flex min-w-0 items-center gap-2">
+            {item.tier && <TierChip tier={item.tier} />}
+            <h3 className="truncate leading-snug font-semibold text-foreground">{item.title}</h3>
           </div>
-
-          {onRemove && (
-            <button
-              type="button"
-              onClick={() => (confirmingRemove ? setRemoving(true) : setConfirmingRemove(true))}
-              onBlur={() => setConfirmingRemove(false)}
-              onMouseLeave={() => setConfirmingRemove(false)}
-              aria-label={confirmingRemove ? `Confirm removing ${item.title}` : `Remove ${item.title}`}
-              className={cn(
-                "-mt-0.5 flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2 text-xs transition-all",
-                confirmingRemove
-                  ? "bg-danger/15 text-danger opacity-100"
-                  : "text-faint opacity-100 hover:bg-white/5 hover:text-white focus-visible:opacity-100 sm:opacity-0 sm:group-hover:opacity-100",
-              )}
-            >
-              <TrashIcon width={14} height={14} />
-              {confirmingRemove && "Remove?"}
-            </button>
+          {item.description && (
+            <p className="mt-0.5 truncate text-sm text-muted-foreground">{item.description}</p>
+          )}
+          {item.notes && (
+            <p className="mt-1.5 line-clamp-2 text-sm whitespace-pre-line text-neutral-400">{item.notes}</p>
           )}
         </div>
 
-        <NotesEditor
-          itemTitle={item.title}
-          notes={item.notes}
-          onSave={onUpdate && ((notes) => onUpdate({ notes }))}
-        />
-      </div>
+        {onEdit && (
+          <span
+            aria-hidden
+            className="mt-1 flex size-7 shrink-0 items-center justify-center rounded-md text-faint transition-opacity group-hover:text-foreground sm:opacity-0 sm:group-hover:opacity-100"
+          >
+            <Pencil className="size-3.5" />
+          </span>
+        )}
+      </button>
     </motion.div>
   );
 }
 
 function RankNumber({ rank }: { rank: number }) {
   return (
-    <div className="relative flex h-10 w-8 shrink-0 items-center justify-center overflow-hidden font-mono text-lg font-semibold text-accent tabular-nums sm:w-9">
+    <div className="relative flex h-16 w-8 shrink-0 items-center justify-center overflow-hidden font-mono text-lg font-semibold text-primary tabular-nums sm:w-9">
       <span className="sr-only">Rank</span>
       <AnimatePresence initial={false} mode="popLayout">
         <motion.span

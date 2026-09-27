@@ -18,7 +18,7 @@ import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useMemo, useState } from "react";
-import type { Item, ItemPatch } from "@/types/list";
+import type { Item } from "@/types/list";
 import { liftModifier, OVERLAY_STYLE, unliftedKeyboardCoordinates, useDropAnimation } from "./drag-effects";
 import { ItemCard } from "./item-card";
 
@@ -34,11 +34,10 @@ const screenReaderInstructions = {
 interface RankedListProps {
   items: Item[];
   onReorder: (activeId: string, overId: string) => void;
-  onUpdateItem: (itemId: string, patch: ItemPatch) => void;
-  onRemoveItem: (itemId: string) => void;
+  onEditItem: (itemId: string) => void;
 }
 
-export function RankedList({ items, onReorder, onUpdateItem, onRemoveItem }: RankedListProps) {
+export function RankedList({ items, onReorder, onEditItem }: RankedListProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   const dropAnimation = useDropAnimation();
@@ -89,13 +88,7 @@ export function RankedList({ items, onReorder, onUpdateItem, onRemoveItem }: Ran
       <SortableContext items={ids} strategy={verticalListSortingStrategy}>
         <ol className="ranked-list flex flex-col gap-2" data-dragging={activeId !== null}>
           {items.map((item, index) => (
-            <SortableItem
-              key={item.id}
-              item={item}
-              rank={index + 1}
-              onUpdate={(patch) => onUpdateItem(item.id, patch)}
-              onRemove={() => onRemoveItem(item.id)}
-            />
+            <SortableItem key={item.id} item={item} rank={index + 1} onEdit={() => onEditItem(item.id)} />
           ))}
         </ol>
       </SortableContext>
@@ -110,11 +103,10 @@ export function RankedList({ items, onReorder, onUpdateItem, onRemoveItem }: Ran
 interface SortableItemProps {
   item: Item;
   rank: number;
-  onUpdate: (patch: ItemPatch) => void;
-  onRemove: () => void;
+  onEdit: () => void;
 }
 
-function SortableItem({ item, rank, onUpdate, onRemove }: SortableItemProps) {
+function SortableItem({ item, rank, onEdit }: SortableItemProps) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id });
 
@@ -125,8 +117,7 @@ function SortableItem({ item, rank, onUpdate, onRemove }: SortableItemProps) {
         rank={rank}
         placeholder={isDragging}
         handleProps={{ ref: setActivatorNodeRef, ...attributes, ...listeners }}
-        onUpdate={onUpdate}
-        onRemove={onRemove}
+        onEdit={onEdit}
       />
     </li>
   );

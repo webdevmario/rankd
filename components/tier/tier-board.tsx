@@ -21,7 +21,6 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove, rectSortingStrategy, SortableContext, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { AnimatePresence } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   liftModifier,
@@ -29,10 +28,9 @@ import {
   unliftedKeyboardCoordinates,
   useDropAnimation,
 } from "@/components/list/drag-effects";
-import { cn } from "@/lib/cn";
+import { cn } from "@/lib/utils";
 import { groupByTier, isTierZone, TIER_ZONES, UNRANKED, zoneOf, type TierZone } from "@/lib/tiers";
-import { TIERS, type Item, type ItemPatch } from "@/types/list";
-import { ItemDetails } from "./item-details";
+import { TIERS, type Item } from "@/types/list";
 import { TierCard } from "./tier-card";
 import { TIER_FILL } from "./tier-styles";
 
@@ -60,19 +58,17 @@ function idsByZone(items: readonly Item[]): ZoneIds {
 interface TierBoardProps {
   items: Item[];
   onMove: (itemId: string, zone: TierZone, index: number) => void;
-  onUpdateItem: (itemId: string, patch: ItemPatch) => void;
-  onRemoveItem: (itemId: string) => void;
+  onEditItem: (itemId: string) => void;
 }
 
 /**
- * The tier list: S–F rows plus an unranked pool, each a sortable container.
+ * The tier list: S to F rows plus an unranked pool, each a sortable container.
  * While dragging, cards move between containers in local state (so rows open
  * up live); the final zone and index are committed once on drop.
  */
-export function TierBoard({ items, onMove, onUpdateItem, onRemoveItem }: TierBoardProps) {
+export function TierBoard({ items, onMove, onEditItem }: TierBoardProps) {
   const [dragIds, setDragIds] = useState<ZoneIds | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [detailsId, setDetailsId] = useState<string | null>(null);
   const lastOverId = useRef<UniqueIdentifier | null>(null);
   const recentlyMovedZone = useRef(false);
   const dropAnimation = useDropAnimation();
@@ -212,14 +208,7 @@ export function TierBoard({ items, onMove, onUpdateItem, onRemoveItem }: TierBoa
     itemsById,
     dragging,
     highlighted: dragging && activeId !== null && ids[zone].includes(activeId),
-    detailsId,
-    onToggleDetails: (id: string) => setDetailsId((current) => (current === id ? null : id)),
-    onCloseDetails: () => setDetailsId(null),
-    onUpdateItem,
-    onRemoveItem: (id: string) => {
-      setDetailsId(null);
-      onRemoveItem(id);
-    },
+    onEditItem,
   });
 
   return (
@@ -231,7 +220,6 @@ export function TierBoard({ items, onMove, onUpdateItem, onRemoveItem }: TierBoa
       onDragStart={({ active }) => {
         setActiveId(String(active.id));
         setDragIds(committedIds);
-        setDetailsId(null);
       }}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
@@ -257,28 +245,12 @@ interface TierRowProps {
   itemsById: Map<string, Item>;
   dragging: boolean;
   highlighted: boolean;
-  detailsId: string | null;
-  onToggleDetails: (id: string) => void;
-  onCloseDetails: () => void;
-  onUpdateItem: (itemId: string, patch: ItemPatch) => void;
-  onRemoveItem: (itemId: string) => void;
+  onEditItem: (itemId: string) => void;
 }
 
-function TierRow({
-  zone,
-  ids,
-  itemsById,
-  dragging,
-  highlighted,
-  detailsId,
-  onToggleDetails,
-  onCloseDetails,
-  onUpdateItem,
-  onRemoveItem,
-}: TierRowProps) {
+function TierRow({ zone, ids, itemsById, dragging, highlighted, onEditItem }: TierRowProps) {
   const { setNodeRef } = useDroppable({ id: zone });
   const unranked = zone === UNRANKED;
-  const detailsItem = detailsId && ids.includes(detailsId) ? itemsById.get(detailsId) : undefined;
   const label = unranked ? "Unranked" : `${zone} tier`;
 
   return (
@@ -286,13 +258,13 @@ function TierRow({
       aria-label={`${label}, ${ids.length} ${ids.length === 1 ? "item" : "items"}`}
       className={cn(
         "overflow-hidden rounded-xl border transition-colors duration-150",
-        unranked ? "mt-4 border-dashed border-line-strong bg-transparent" : "border-line bg-surface",
+        unranked ? "mt-4 border-dashed border-border-strong bg-transparent" : "border-border bg-card",
         highlighted && "border-white/25",
       )}
     >
       {unranked && (
         <header className="flex items-baseline justify-between px-3 pt-3">
-          <h2 className="text-sm font-semibold text-white">Unranked</h2>
+          <h2 className="text-sm font-semibold text-foreground">Unranked</h2>
           <span className="font-mono text-xs text-faint">{ids.length}</span>
         </header>
       )}
@@ -320,21 +292,14 @@ function TierRow({
           >
             {ids.map((id) => {
               const item = itemsById.get(id);
-              return item ? (
-                <SortableTierCard
-                  key={id}
-                  item={item}
-                  selected={detailsId === id}
-                  onToggleDetails={() => onToggleDetails(id)}
-                />
-              ) : null;
+              return item ? <SortableTierCard key={id} item={item} onEdit={() => onEditItem(id)} /> : null;
             })}
             {ids.length === 0 && (
               <li
                 aria-hidden
                 className={cn(
                   "flex min-h-24 flex-1 items-center justify-center rounded-lg border border-dashed text-xs transition-colors sm:min-h-28",
-                  dragging ? "border-white/20 text-muted" : "border-line text-faint",
+                  dragging ? "border-white/20 text-muted-foreground" : "border-border text-faint",
                 )}
               >
                 {unranked && !dragging ? "New items land here" : "Drop here"}
@@ -343,31 +308,11 @@ function TierRow({
           </ul>
         </SortableContext>
       </div>
-
-      <AnimatePresence initial={false}>
-        {detailsItem && (
-          <ItemDetails
-            key={detailsItem.id}
-            item={detailsItem}
-            onUpdate={(patch) => onUpdateItem(detailsItem.id, patch)}
-            onRemove={() => onRemoveItem(detailsItem.id)}
-            onClose={onCloseDetails}
-          />
-        )}
-      </AnimatePresence>
     </section>
   );
 }
 
-function SortableTierCard({
-  item,
-  selected,
-  onToggleDetails,
-}: {
-  item: Item;
-  selected: boolean;
-  onToggleDetails: () => void;
-}) {
+function SortableTierCard({ item, onEdit }: { item: Item; onEdit: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
   });
@@ -379,9 +324,9 @@ function SortableTierCard({
       {...attributes}
       {...listeners}
       aria-label={item.title}
-      className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+      className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
-      <TierCard item={item} placeholder={isDragging} selected={selected} onToggleDetails={onToggleDetails} />
+      <TierCard item={item} placeholder={isDragging} onEdit={onEdit} />
     </li>
   );
 }

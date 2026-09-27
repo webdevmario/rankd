@@ -1,9 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useState, type SyntheticEvent } from "react";
-import { PencilIcon } from "@/components/icons";
-import { cn } from "@/lib/cn";
+import type { SyntheticEvent } from "react";
+import { Pencil } from "lucide-react";
+import { ItemCover } from "@/components/item-cover";
+import { cn } from "@/lib/utils";
 import type { Item } from "@/types/list";
 
 const spring = { type: "spring", stiffness: 520, damping: 34 } as const;
@@ -19,12 +20,10 @@ interface TierCardProps {
   overlay?: boolean;
   /** The slot left behind while this item is being dragged. */
   placeholder?: boolean;
-  /** Its details panel is open. */
-  selected?: boolean;
-  onToggleDetails?: () => void;
+  onEdit?: () => void;
 }
 
-export function TierCard({ item, overlay, placeholder, selected, onToggleDetails }: TierCardProps) {
+export function TierCard({ item, overlay, placeholder, onEdit }: TierCardProps) {
   return (
     <motion.div
       initial={overlay ? { boxShadow: RESTING_SHADOW } : { opacity: 0, scale: 0.92 }}
@@ -38,17 +37,19 @@ export function TierCard({ item, overlay, placeholder, selected, onToggleDetails
     >
       <div
         className={cn(
-          "tier-cover relative aspect-[2/3] overflow-hidden rounded-lg border bg-surface-raised transition-[translate,border-color] duration-200",
-          overlay
-            ? "border-white/30"
-            : "border-line group-hover:-translate-y-0.5 group-hover:border-line-strong",
-          selected && "border-white/70 ring-2 ring-white/40",
+          "relative aspect-[2/3] overflow-hidden rounded-lg border transition-colors duration-150",
+          overlay ? "border-white/30" : "border-border group-hover:border-border-strong",
         )}
       >
-        <Cover item={item} />
+        <ItemCover
+          key={item.coverImageUrl}
+          title={item.title}
+          src={item.coverImageUrl}
+          className="size-full"
+        />
         {item.notes && (
           <span
-            className="absolute bottom-1 left-1 size-1.5 rounded-full bg-accent shadow-[0_0_0_2px_rgba(0,0,0,0.6)]"
+            className="absolute bottom-1 left-1 size-1.5 rounded-full bg-primary shadow-[0_0_0_2px_rgba(0,0,0,0.6)]"
             aria-hidden
           />
         )}
@@ -56,66 +57,23 @@ export function TierCard({ item, overlay, placeholder, selected, onToggleDetails
 
       <p className="mt-1 line-clamp-2 text-[11px] leading-tight text-neutral-300">{item.title}</p>
 
-      {onToggleDetails && (
+      {onEdit && (
         <button
           type="button"
-          onClick={onToggleDetails}
+          onClick={onEdit}
           onPointerDown={stop}
           onMouseDown={stop}
           onTouchStart={stop}
           onKeyDown={stop}
-          aria-label={`${selected ? "Close" : "Open"} notes for ${item.title}`}
-          aria-expanded={selected}
+          aria-label={`Edit ${item.title}`}
           className={cn(
-            "absolute top-1 right-1 flex size-6 items-center justify-center rounded-md bg-black/75 text-white backdrop-blur-sm transition-opacity",
-            "hover:bg-black focus-visible:opacity-100",
-            selected ? "opacity-100" : "opacity-100 sm:opacity-0 sm:group-hover:opacity-100",
+            "absolute top-1 right-1 flex size-6 items-center justify-center rounded-md bg-black/75 text-foreground backdrop-blur-sm transition-opacity",
+            "opacity-100 hover:bg-black focus-visible:opacity-100 sm:opacity-0 sm:group-hover:opacity-100",
           )}
         >
-          <PencilIcon width={12} height={12} />
+          <Pencil className="size-3" />
         </button>
       )}
     </motion.div>
-  );
-}
-
-function Cover({ item }: { item: Item }) {
-  const [failedSrc, setFailedSrc] = useState<string | null>(null);
-  const src = item.coverImageUrl;
-
-  if (src && failedSrc !== src) {
-    return (
-      // Covers are arbitrary user-supplied URLs, so next/image's host allowlist doesn't fit.
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={src}
-        alt=""
-        loading="lazy"
-        draggable={false}
-        referrerPolicy="no-referrer"
-        onError={() => setFailedSrc(src)}
-        className="size-full object-cover"
-      />
-    );
-  }
-
-  return (
-    <div className="flex size-full items-center justify-center bg-linear-to-br from-neutral-800 to-neutral-950 p-1.5 text-center">
-      <span className="font-mono text-lg font-semibold text-neutral-400">{initials(item.title)}</span>
-    </div>
-  );
-}
-
-function initials(title: string): string {
-  const words = title
-    .replace(/^(the|a|an)\s+/i, "")
-    .split(/\s+/)
-    .filter(Boolean);
-  return (
-    words
-      .slice(0, 2)
-      .map((word) => word[0])
-      .join("")
-      .toUpperCase() || "?"
   );
 }
