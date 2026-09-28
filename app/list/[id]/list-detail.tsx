@@ -96,7 +96,7 @@ export function ListDetail({ id }: { id: string }) {
               </div>
             </div>
             {list.description && <p className="mt-2 max-w-3xl text-muted-foreground">{list.description}</p>}
-            <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
               {list.rankingMode === "tier" ? (
                 <TierSummary items={list.items} tiers={list.tiers} />
               ) : (
