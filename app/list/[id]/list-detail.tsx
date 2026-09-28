@@ -14,11 +14,11 @@ import { TierBoard } from "@/components/tier/tier-board";
 import { TierSummary } from "@/components/tier/tier-summary";
 import { Button } from "@/components/ui/button";
 import { useList } from "@/hooks/use-list";
-import type { Item } from "@/types/list";
+import type { Item, List } from "@/types/list";
 
 type DialogState = { kind: "add-item" } | { kind: "edit-item"; item: Item } | { kind: "edit-list" };
 
-export function ListDetail({ id }: { id: string }) {
+export function ListDetail({ id, initialList }: { id: string; initialList?: List | null }) {
   const router = useRouter();
   const {
     list,
@@ -32,7 +32,7 @@ export function ListDetail({ id }: { id: string }) {
     deleteItem,
     updateDetails,
     deleteList,
-  } = useList(id);
+  } = useList(id, initialList);
   // `dialog` outlives `open` so a closing dialog keeps its content through the exit animation.
   const [dialog, setDialog] = useState<DialogState | null>(null);
   const [open, setOpen] = useState(false);

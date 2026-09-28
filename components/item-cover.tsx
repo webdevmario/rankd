@@ -28,7 +28,8 @@ export function ItemCover({ title, src, className, initialsClassName = "text-lg"
           draggable={false}
           referrerPolicy="no-referrer"
           onError={() => setFailedSrc(src)}
-          className="size-full object-cover"
+          ref={fadeInOnLoad}
+          className="size-full object-cover transition-opacity duration-300"
         />
       ) : (
         <div className="flex size-full items-center justify-center bg-linear-to-br from-neutral-800 to-neutral-950 p-1 text-center">
@@ -39,6 +40,16 @@ export function ItemCover({ title, src, className, initialsClassName = "text-lg"
       )}
     </div>
   );
+}
+
+/**
+ * Fades a cover in once it downloads instead of letting it pop in. Covers that
+ * are already loaded (cached, or finished before hydration) show at once.
+ */
+function fadeInOnLoad(img: HTMLImageElement | null) {
+  if (!img || img.complete) return;
+  img.style.opacity = "0";
+  img.addEventListener("load", () => img.style.removeProperty("opacity"), { once: true });
 }
 
 /** Up to two initials for a cover placeholder, skipping a leading "The", "A" or "An". */

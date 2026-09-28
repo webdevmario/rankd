@@ -31,6 +31,7 @@ import {
 } from "@/components/list/drag-effects";
 import { TIER_COLOR_FILL } from "@/lib/tier-colors";
 import { groupByTier, newTier, tierZones, UNRANKED, zoneOf, type TierZone } from "@/lib/tiers";
+import { EntranceGate } from "@/components/entrance";
 import { cn } from "@/lib/utils";
 import { MAX_TIERS, type Item, type TierDef } from "@/types/list";
 import { TierCard } from "./tier-card";
@@ -275,65 +276,67 @@ export function TierBoard({ items, tiers, onMove, onEditItem, onTiersChange }: T
   });
 
   return (
-    <DndContext
-      id="tier-board"
-      sensors={sensors}
-      collisionDetection={collisionDetection}
-      accessibility={{ announcements, screenReaderInstructions }}
-      onDragStart={({ active }) => {
-        setActiveId(String(active.id));
-        setDragIds(committedIds);
-      }}
-      onDragOver={handleDragOver}
-      onDragEnd={handleDragEnd}
-      onDragCancel={reset}
-    >
-      <div className="tier-board flex flex-col gap-2" data-dragging={dragging}>
-        {tiers.map((tier, index) => (
-          <TierRow
-            key={tier.id}
-            {...rowProps(tier.id)}
-            label={
-              <TierEditor
-                tier={tier}
-                index={index}
-                tierCount={tiers.length}
-                itemCount={ids[tier.id]?.length ?? 0}
-                open={editingTierId === tier.id}
-                onOpenChange={(open) => {
-                  setEditingTierId(open ? tier.id : null);
-                  if (!open) setPreview(null);
-                }}
-                onPreview={(draft) =>
-                  setPreview((prev) =>
-                    draft ? { id: tier.id, ...draft } : prev?.id === tier.id ? null : prev,
-                  )
-                }
-                trigger={
-                  <TierLabel tier={shown[index]} wide={wideLabels} active={editingTierId === tier.id} />
-                }
-                {...tierActions(tier.id)}
-              />
-            }
-          />
-        ))}
-        {tiers.length < MAX_TIERS && (
-          <button
-            type="button"
-            onClick={addTier}
-            className="flex h-10 items-center justify-center gap-1.5 rounded-xl border border-dashed border-border text-sm text-muted-foreground transition-colors hover:border-border-strong hover:bg-accent/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-          >
-            <Plus className="size-4" />
-            Add tier
-          </button>
-        )}
-        <TierRow {...rowProps(UNRANKED)} />
-      </div>
+    <EntranceGate>
+      <DndContext
+        id="tier-board"
+        sensors={sensors}
+        collisionDetection={collisionDetection}
+        accessibility={{ announcements, screenReaderInstructions }}
+        onDragStart={({ active }) => {
+          setActiveId(String(active.id));
+          setDragIds(committedIds);
+        }}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+        onDragCancel={reset}
+      >
+        <div className="tier-board flex flex-col gap-2" data-dragging={dragging}>
+          {tiers.map((tier, index) => (
+            <TierRow
+              key={tier.id}
+              {...rowProps(tier.id)}
+              label={
+                <TierEditor
+                  tier={tier}
+                  index={index}
+                  tierCount={tiers.length}
+                  itemCount={ids[tier.id]?.length ?? 0}
+                  open={editingTierId === tier.id}
+                  onOpenChange={(open) => {
+                    setEditingTierId(open ? tier.id : null);
+                    if (!open) setPreview(null);
+                  }}
+                  onPreview={(draft) =>
+                    setPreview((prev) =>
+                      draft ? { id: tier.id, ...draft } : prev?.id === tier.id ? null : prev,
+                    )
+                  }
+                  trigger={
+                    <TierLabel tier={shown[index]} wide={wideLabels} active={editingTierId === tier.id} />
+                  }
+                  {...tierActions(tier.id)}
+                />
+              }
+            />
+          ))}
+          {tiers.length < MAX_TIERS && (
+            <button
+              type="button"
+              onClick={addTier}
+              className="flex h-10 items-center justify-center gap-1.5 rounded-xl border border-dashed border-border text-sm text-muted-foreground transition-colors hover:border-border-strong hover:bg-accent/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+            >
+              <Plus className="size-4" />
+              Add tier
+            </button>
+          )}
+          <TierRow {...rowProps(UNRANKED)} />
+        </div>
 
-      <DragOverlay adjustScale modifiers={[lift]} dropAnimation={dropAnimation} style={OVERLAY_STYLE}>
-        {activeItem ? <TierCard item={activeItem} overlay /> : null}
-      </DragOverlay>
-    </DndContext>
+        <DragOverlay adjustScale modifiers={[lift]} dropAnimation={dropAnimation} style={OVERLAY_STYLE}>
+          {activeItem ? <TierCard item={activeItem} overlay /> : null}
+        </DragOverlay>
+      </DndContext>
+    </EntranceGate>
   );
 }
 

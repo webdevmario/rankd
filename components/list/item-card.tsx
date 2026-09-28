@@ -5,6 +5,7 @@ import type { HTMLAttributes, Ref } from "react";
 import { GripVertical, Pencil } from "lucide-react";
 import { ItemCover } from "@/components/item-cover";
 import { TierChip } from "@/components/tier/tier-styles";
+import { useEntrance } from "@/components/entrance";
 import { cn } from "@/lib/utils";
 import type { Item, TierDef } from "@/types/list";
 
@@ -30,9 +31,11 @@ const RESTING_SHADOW = "0px 0px 0px -16px rgba(0,0,0,0), 0px 0px 0px 0px rgba(25
 const LIFTED_SHADOW = "0px 24px 48px -16px rgba(0,0,0,0.95), 0px 0px 0px 1px rgba(255,122,26,0.35)";
 
 export function ItemCard({ item, tier, rank, handleProps, placeholder, overlay, onEdit }: ItemCardProps) {
+  const entrance = useEntrance();
+
   return (
     <motion.div
-      initial={overlay ? { boxShadow: RESTING_SHADOW } : { opacity: 0, y: 8 }}
+      initial={overlay ? { boxShadow: RESTING_SHADOW } : entrance && { opacity: 0, y: 8 }}
       animate={overlay ? { boxShadow: LIFTED_SHADOW } : { opacity: 1, y: 0 }}
       transition={spring}
       className={cn(

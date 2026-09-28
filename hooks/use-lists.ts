@@ -7,9 +7,10 @@ import { useRefetchOnFocus } from "./use-refetch-on-focus";
 
 type Status = "loading" | "ready" | "error";
 
-export function useLists() {
-  const [lists, setLists] = useState<List[]>([]);
-  const [status, setStatus] = useState<Status>("loading");
+/** All lists. `initial` is what the server rendered: shown at once, then refreshed quietly. */
+export function useLists(initial?: List[]) {
+  const [lists, setLists] = useState<List[]>(initial ?? []);
+  const [status, setStatus] = useState<Status>(initial ? "ready" : "loading");
 
   const load = useCallback(async () => {
     try {
@@ -17,7 +18,7 @@ export function useLists() {
       setStatus("ready");
     } catch (error) {
       console.error(error);
-      setStatus("error");
+      setStatus((prev) => (prev === "ready" ? prev : "error"));
     }
   }, []);
 

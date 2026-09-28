@@ -18,6 +18,7 @@ import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useMemo, useState } from "react";
+import { EntranceGate } from "@/components/entrance";
 import type { Item, TierDef } from "@/types/list";
 import { liftModifier, OVERLAY_STYLE, unliftedKeyboardCoordinates, useDropAnimation } from "./drag-effects";
 import { ItemCard } from "./item-card";
@@ -78,42 +79,44 @@ export function RankedList({ items, tiers, onReorder, onEditItem }: RankedListPr
   }
 
   return (
-    <DndContext
-      id="ranked-list"
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      modifiers={[restrictToVerticalAxis]}
-      accessibility={{ announcements, screenReaderInstructions }}
-      onDragStart={({ active }: DragStartEvent) => setActiveId(String(active.id))}
-      onDragOver={({ over }: DragOverEvent) => setOverId(over ? String(over.id) : null)}
-      onDragEnd={handleDragEnd}
-      onDragCancel={reset}
-    >
-      <SortableContext items={ids} strategy={verticalListSortingStrategy}>
-        <ol className="ranked-list flex flex-col gap-2" data-dragging={activeId !== null}>
-          {items.map((item, index) => (
-            <SortableItem
-              key={item.id}
-              item={item}
-              tier={tierOf(item)}
-              rank={index + 1}
-              onEdit={() => onEditItem(item.id)}
-            />
-          ))}
-        </ol>
-      </SortableContext>
+    <EntranceGate>
+      <DndContext
+        id="ranked-list"
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        modifiers={[restrictToVerticalAxis]}
+        accessibility={{ announcements, screenReaderInstructions }}
+        onDragStart={({ active }: DragStartEvent) => setActiveId(String(active.id))}
+        onDragOver={({ over }: DragOverEvent) => setOverId(over ? String(over.id) : null)}
+        onDragEnd={handleDragEnd}
+        onDragCancel={reset}
+      >
+        <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+          <ol className="ranked-list flex flex-col gap-2" data-dragging={activeId !== null}>
+            {items.map((item, index) => (
+              <SortableItem
+                key={item.id}
+                item={item}
+                tier={tierOf(item)}
+                rank={index + 1}
+                onEdit={() => onEditItem(item.id)}
+              />
+            ))}
+          </ol>
+        </SortableContext>
 
-      <DragOverlay adjustScale modifiers={[lift]} dropAnimation={dropAnimation} style={OVERLAY_STYLE}>
-        {activeItem ? (
-          <ItemCard
-            item={activeItem}
-            tier={tierOf(activeItem)}
-            rank={rankOf(overId ?? activeItem.id)}
-            overlay
-          />
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+        <DragOverlay adjustScale modifiers={[lift]} dropAnimation={dropAnimation} style={OVERLAY_STYLE}>
+          {activeItem ? (
+            <ItemCard
+              item={activeItem}
+              tier={tierOf(activeItem)}
+              rank={rankOf(overId ?? activeItem.id)}
+              overlay
+            />
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+    </EntranceGate>
   );
 }
 

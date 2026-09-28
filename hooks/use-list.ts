@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { getListService } from "@/lib/lists";
 import { appendItem, moveItem, patchItem, removeItem } from "@/lib/ranking";
@@ -20,17 +20,30 @@ interface State {
  * Loads one list and exposes its mutations. Item edits are applied to local
  * state immediately (so drag-and-drop never flickers) and then persisted; if
  * persistence fails the list is reloaded from storage.
+ *
+ * `initial` is the list as the server rendered it (null: not found). The page
+ * shows it at once and refreshes it quietly in the background.
  */
-export function useList(id: string) {
-  const [state, setState] = useState<State>({ status: "loading", list: null });
+export function useList(id: string, initial?: List | null) {
+  const [state, setState] = useState<State>(() =>
+    initial === undefined
+      ? { status: "loading", list: null }
+      : initial
+        ? { status: "ready", list: initial }
+        : { status: "not-found", list: null },
+  );
+  // Bumped by every local edit, so a reload that started before the edit doesn't undo it on screen.
+  const edits = useRef(0);
 
   const load = useCallback(async () => {
+    const editsAtStart = edits.current;
     try {
       const list = await getListService().getList(id);
+      if (edits.current !== editsAtStart) return;
       setState(list ? { status: "ready", list } : { status: "not-found", list: null });
     } catch (error) {
       console.error(error);
-      setState({ status: "error", list: null });
+      setState((prev) => (prev.list ? prev : { status: "error", list: null }));
     }
   }, [id]);
 
@@ -42,6 +55,7 @@ export function useList(id: string) {
 
   const optimistic = useCallback(
     (apply: (list: List) => List, persist: () => Promise<unknown>) => {
+      edits.current++;
       setState((prev) => (prev.list ? { ...prev, list: apply(prev.list) } : prev));
       persist().catch((error: unknown) => {
         console.error(error);
@@ -101,6 +115,7 @@ export function useList(id: string) {
   const saveItem = useCallback(
     async (itemId: string, patch: ItemPatch) => {
       const list = await getListService().updateItem(id, itemId, patch);
+      edits.current++;
       setState({ status: "ready", list });
       return list;
     },
@@ -119,6 +134,7 @@ export function useList(id: string) {
   const addItem = useCallback(
     async (input: NewItem) => {
       const item = await getListService().addItem(id, input);
+      edits.current++;
       setState((prev) =>
         prev.list ? { ...prev, list: { ...prev.list, items: appendItem(prev.list.items, item) } } : prev,
       );
@@ -130,6 +146,7 @@ export function useList(id: string) {
   const updateDetails = useCallback(
     async (patch: ListPatch) => {
       const list = await getListService().updateList(id, patch);
+      edits.current++;
       setState({ status: "ready", list });
       return list;
     },

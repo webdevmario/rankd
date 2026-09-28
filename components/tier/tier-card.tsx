@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import type { SyntheticEvent } from "react";
 import { Pencil } from "lucide-react";
 import { ItemCover } from "@/components/item-cover";
+import { useEntrance } from "@/components/entrance";
 import { cn } from "@/lib/utils";
 import type { Item } from "@/types/list";
 
@@ -24,9 +25,11 @@ interface TierCardProps {
 }
 
 export function TierCard({ item, overlay, placeholder, onEdit }: TierCardProps) {
+  const entrance = useEntrance();
+
   return (
     <motion.div
-      initial={overlay ? { boxShadow: RESTING_SHADOW } : { opacity: 0, scale: 0.92 }}
+      initial={overlay ? { boxShadow: RESTING_SHADOW } : entrance && { opacity: 0, scale: 0.92 }}
       animate={overlay ? { boxShadow: LIFTED_SHADOW } : { opacity: 1, scale: 1 }}
       transition={spring}
       className={cn(

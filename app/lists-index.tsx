@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { List, Plus } from "lucide-react";
+import { List as ListIcon, Plus } from "lucide-react";
 import { ListCard } from "@/components/lists/list-card";
 import { ListDialog } from "@/components/lists/list-dialog";
 import { LocalImportBanner } from "@/components/lists/local-import-banner";
@@ -10,10 +10,11 @@ import { EmptyState } from "@/components/empty-state";
 import { ErrorState, SkeletonRows } from "@/components/status";
 import { Button } from "@/components/ui/button";
 import { useLists } from "@/hooks/use-lists";
+import type { List } from "@/types/list";
 
-export function ListsIndex() {
+export function ListsIndex({ initialLists }: { initialLists?: List[] }) {
   const router = useRouter();
-  const { lists, status, createList, reload } = useLists();
+  const { lists, status, createList, reload } = useLists(initialLists);
   const [creating, setCreating] = useState(false);
 
   const newListButton = (
@@ -40,7 +41,7 @@ export function ListsIndex() {
       {status === "ready" &&
         (lists.length === 0 ? (
           <EmptyState
-            icon={<List className="size-5" />}
+            icon={<ListIcon className="size-5" />}
             title="No lists yet. Create your first ranking."
             body="Books, albums, burritos, playoff teams. If it can be argued about, it can be ranked."
             action={newListButton}
