@@ -13,6 +13,14 @@ export const ITEM_SOURCE_TYPES = ["manual", "stack-api", "csv-import"] as const;
 
 export type ItemSourceType = (typeof ITEM_SOURCE_TYPES)[number];
 
+/**
+ * What a list ranks. A `books` list adds items by searching your Stacks shelf
+ * (with a free-text fallback); `anything` lists are free text only.
+ */
+export const LIST_KINDS = ["anything", "books"] as const;
+
+export type ListKind = (typeof LIST_KINDS)[number];
+
 /** How a list is ranked and displayed. Both views share the same underlying order. */
 export const RANKING_MODES = ["tier", "linear"] as const;
 
@@ -66,6 +74,13 @@ export interface Item {
   rank: number;
   /** Id of one of the list's tiers. Absent means unranked (the pool below the tiers). */
   tier?: string;
+  /**
+   * The Stacks book this item is, e.g. "stacks:book:703". A linked item's
+   * title, author and cover come from Stacks each time the list is read.
+   */
+  sourceRef?: string;
+  /** A linked item's author, from Stacks. Read-only: never stored by rankd. */
+  author?: string;
 }
 
 export interface List {
@@ -73,6 +88,7 @@ export interface List {
   title: string;
   description?: string;
   itemSourceType: ItemSourceType;
+  kind: ListKind;
   rankingMode: RankingMode;
   /** The tier board's rows, top (best) to bottom. Always at least one. */
   tiers: TierDef[];
@@ -92,7 +108,8 @@ export interface NewList {
   title: string;
   description?: string;
   itemSourceType?: ItemSourceType;
+  kind?: ListKind;
   rankingMode?: RankingMode;
 }
 
-export type ListPatch = Partial<Pick<List, "title" | "description" | "rankingMode">>;
+export type ListPatch = Partial<Pick<List, "title" | "description" | "kind" | "rankingMode">>;

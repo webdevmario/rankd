@@ -8,12 +8,19 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import type { List } from "@/types/list";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { LIST_KINDS, type List, type ListKind } from "@/types/list";
 
 export interface ListValues {
   title: string;
   description: string;
+  kind: ListKind;
 }
+
+const KIND_OPTIONS: Record<ListKind, { label: string; hint: string }> = {
+  anything: { label: "Anything", hint: "Type in each item." },
+  books: { label: "Books", hint: "Add books from your Stacks shelf, with Stacks's covers." },
+};
 
 interface ListDialogProps {
   open: boolean;
@@ -51,6 +58,7 @@ function ListForm({ list, onSubmit, onDelete, onDone }: ListFormProps) {
   const editing = list !== undefined;
   const [title, setTitle] = useState(list?.title ?? "");
   const [description, setDescription] = useState(list?.description ?? "");
+  const [kind, setKind] = useState<ListKind>(list?.kind ?? "anything");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const count = list?.items.length ?? 0;
@@ -63,7 +71,7 @@ function ListForm({ list, onSubmit, onDelete, onDone }: ListFormProps) {
     }
     setPending(true);
     try {
-      await onSubmit({ title, description });
+      await onSubmit({ title, description, kind });
     } catch (err) {
       console.error(err);
       setError(editing ? "Couldn't save. Try again." : "Couldn't create the list. Try again.");
@@ -111,6 +119,31 @@ function ListForm({ list, onSubmit, onDelete, onDone }: ListFormProps) {
             placeholder="What's being ranked, and by what measure?"
             rows={3}
           />
+        </Field>
+        <Field>
+          <FieldLabel id={`${id}-kind`}>Ranking</FieldLabel>
+          <ToggleGroup
+            aria-labelledby={`${id}-kind`}
+            value={[kind]}
+            onValueChange={(value) => {
+              const next = value[0] as ListKind | undefined;
+              if (next) setKind(next);
+            }}
+            spacing={0}
+            className="w-fit rounded-lg border bg-card p-0.5"
+          >
+            {LIST_KINDS.map((option) => (
+              <ToggleGroupItem
+                key={option}
+                value={option}
+                size="sm"
+                className="rounded-md! px-3 text-muted-foreground aria-pressed:bg-foreground aria-pressed:text-background hover:aria-pressed:bg-foreground"
+              >
+                {KIND_OPTIONS[option].label}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+          <p className="text-sm text-muted-foreground">{KIND_OPTIONS[kind].hint}</p>
         </Field>
 
         {error && <FieldError>{error}</FieldError>}

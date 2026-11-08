@@ -99,7 +99,22 @@ rating in an item's notes or description (9 to 10 is S, 8 A, 7 B, 6 C, 5 D, 4 or
 to Unranked), the old em dash King title is renamed, and the " · 6/10 in Stacks" description suffix is
 dropped.
 
-### Stephen King list from Stacks
+### Books lists and Stacks
+
+Stacks (the household book log on port 3002) is the master record for books. A list's **kind** is
+Anything (free-text items) or Books, set in the list dialog. On a Books list, **Add a book** searches the
+books on your Stacks shelf (`STACKS_PROFILE_ID`, default 1, Mario) and stores only a link on the item
+(`items.source_ref`, e.g. `stacks:book:703`). Each time a list is read, `lib/server/stacks.ts` fills in
+linked items' title, author and cover from Stacks, so a cover changed in Stacks shows in rankd. "Add without
+Stacks" still makes a free-text item.
+
+- rankd talks to Stacks over HTTP only (`STACKS_URL`, default `http://localhost:3002`): Stacks's
+  `/api/library/search`, `/api/library/books?ids=` and `/api/library/books/:id/cover`.
+- Covers go through rankd's `/api/stacks/books/:id/cover?v=…` so phones on the tailnet can load them. `v` is
+  Stacks's cover version, so each version is cached for good.
+- A linked item's cover is never stored; its title is stored only as a fallback for when Stacks is down.
+- `npm run link:stacks -- "<list>" [--apply]` turns an existing list into a Books list and links its items by
+  title (dry run without `--apply`). The Stephen King list was linked this way on 2026-11-08.
 
 The King list was originally seeded from `data/king-books.json`, generated from the Stacks book log (the
 Mario profile's Stephen King reads) by a one-time script. It's kept for reference and a possible Stacks sync
@@ -179,15 +194,16 @@ app/                          App Router pages
   api/lists/route.ts          GET /api/lists       Every list with its items
   api/lists/[id]/route.ts     GET, PUT, DELETE     One list (PUT upserts the whole list)
   api/image/route.ts          GET /api/image?url=  Image proxy so exported covers aren't blocked by CORS
+  api/stacks/                 Stacks search and cover proxy for Books lists
 db/migrations/                Numbered SQL migrations (npm run db:migrate)
 ```
 
 ### Data model
 
 ```ts
-List { id, title, description?, itemSourceType, rankingMode, tiers: TierDef[], createdAt, updatedAt, items: Item[] }
+List { id, title, description?, itemSourceType, kind, rankingMode, tiers: TierDef[], createdAt, updatedAt, items: Item[] }
 TierDef { id, label, color }
-Item { id, title, description?, coverImageUrl?, notes?, rank, tier? }   // tier: a TierDef id
+Item { id, title, description?, coverImageUrl?, notes?, rank, tier?, sourceRef?, author? }   // tier: a TierDef id
 ```
 
 `itemSourceType` is `"manual" | "stack-api" | "csv-import"`. Only `manual` has an adapter; the others are

@@ -1,12 +1,14 @@
 import "server-only";
-import type { Item, ItemSourceType, List, RankingMode, TierDef } from "@/types/list";
+import type { Item, ItemSourceType, List, ListKind, RankingMode, TierDef } from "@/types/list";
 import { getPool, transaction } from "./db";
+import { withStacksBooks } from "./stacks";
 
 interface ListRow {
   id: string;
   title: string;
   description: string | null;
   item_source_type: ItemSourceType;
+  kind: ListKind;
   ranking_mode: RankingMode;
   tiers: TierDef[];
   created_at: Date;
@@ -22,12 +24,15 @@ interface ItemRow {
   notes: string | null;
   rank: number;
   tier: string | null;
+  source_ref: string | null;
 }
 
-const LIST_COLUMNS = "id, title, description, item_source_type, ranking_mode, tiers, created_at, updated_at";
-const ITEM_COLUMNS = "id, list_id, title, description, cover_image_url, notes, rank, tier";
+const LIST_COLUMNS =
+  "id, title, description, item_source_type, kind, ranking_mode, tiers, created_at, updated_at";
+const ITEM_COLUMNS = "id, list_id, title, description, cover_image_url, notes, rank, tier, source_ref";
+const ITEM_COLUMN_COUNT = ITEM_COLUMNS.split(",").length;
 
-/** Every list with its items, most recently updated first. */
+/** Every list with its items, most recently updated first. Linked items are filled in from Stacks. */
 export async function findLists(): Promise<List[]> {
   const pool = getPool();
   const [lists, items] = await Promise.all([
@@ -40,7 +45,7 @@ export async function findLists(): Promise<List[]> {
     bucket.push(toItem(row));
     byList.set(row.list_id, bucket);
   }
-  return lists.rows.map((row) => toList(row, byList.get(row.id) ?? []));
+  return withStacksBooks(lists.rows.map((row) => toList(row, byList.get(row.id) ?? [])));
 }
 
 export async function findList(id: string): Promise<List | null> {
@@ -50,18 +55,25 @@ export async function findList(id: string): Promise<List | null> {
     pool.query<ItemRow>(`select ${ITEM_COLUMNS} from items where list_id = $1 order by rank`, [id]),
   ]);
   const row = lists.rows[0];
-  return row ? toList(row, items.rows.map(toItem)) : null;
+  if (!row) return null;
+  const [list] = await withStacksBooks([toList(row, items.rows.map(toItem))]);
+  return list;
 }
 
-/** Inserts or replaces a list and all of its items in one transaction. */
+/**
+ * Inserts or replaces a list and all of its items in one transaction. A linked
+ * item's cover is never stored (it's read from Stacks); its title is kept as a
+ * fallback for when Stacks is down. Returns the list as given.
+ */
 export async function upsertList(list: List): Promise<List> {
   await transaction(async (client) => {
     await client.query(
-      `insert into lists (${LIST_COLUMNS}) values ($1, $2, $3, $4, $5, $6::jsonb, $7, $8)
+      `insert into lists (${LIST_COLUMNS}) values ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9)
        on conflict (id) do update set
          title = excluded.title,
          description = excluded.description,
          item_source_type = excluded.item_source_type,
+         kind = excluded.kind,
          ranking_mode = excluded.ranking_mode,
          tiers = excluded.tiers,
          updated_at = excluded.updated_at`,
@@ -70,6 +82,7 @@ export async function upsertList(list: List): Promise<List> {
         list.title,
         list.description ?? null,
         list.itemSourceType,
+        list.kind,
         list.rankingMode,
         JSON.stringify(list.tiers),
         list.createdAt,
@@ -78,7 +91,7 @@ export async function upsertList(list: List): Promise<List> {
     );
     await client.query("delete from items where list_id = $1", [list.id]);
     if (list.items.length > 0) {
-      // One multi-row insert: ($1..$8), ($9..$16), ...
+      // One multi-row insert: ($1..$9), ($10..$18), ...
       const values: unknown[] = [];
       const tuples = list.items.map((item, index) => {
         values.push(
@@ -86,13 +99,14 @@ export async function upsertList(list: List): Promise<List> {
           list.id,
           item.title,
           item.description ?? null,
-          item.coverImageUrl ?? null,
+          item.sourceRef ? null : (item.coverImageUrl ?? null),
           item.notes ?? null,
           item.rank,
           item.tier ?? null,
+          item.sourceRef ?? null,
         );
-        const base = index * 8;
-        return `(${Array.from({ length: 8 }, (_, i) => `$${base + i + 1}`).join(", ")})`;
+        const base = index * ITEM_COLUMN_COUNT;
+        return `(${Array.from({ length: ITEM_COLUMN_COUNT }, (_, i) => `$${base + i + 1}`).join(", ")})`;
       });
       await client.query(`insert into items (${ITEM_COLUMNS}) values ${tuples.join(", ")}`, values);
     }
@@ -110,6 +124,7 @@ function toList(row: ListRow, items: Item[]): List {
     title: row.title,
     ...(row.description ? { description: row.description } : {}),
     itemSourceType: row.item_source_type,
+    kind: row.kind,
     rankingMode: row.ranking_mode,
     tiers: row.tiers,
     createdAt: row.created_at.toISOString(),
@@ -127,5 +142,6 @@ function toItem(row: ItemRow): Item {
     ...(row.notes ? { notes: row.notes } : {}),
     rank: row.rank,
     ...(row.tier ? { tier: row.tier } : {}),
+    ...(row.source_ref ? { sourceRef: row.source_ref } : {}),
   };
 }

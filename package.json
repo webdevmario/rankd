@@ -19,7 +19,8 @@
     "prod:logs": "cat /tmp/rankd.log",
     "prod:errors": "cat /tmp/rankd-error.log",
     "db:migrate": "node --env-file=.env.local scripts/db-migrate.mjs",
-    "import:stacks": "node --env-file=../stacks/.env scripts/import-from-stacks.mjs"
+    "import:stacks": "node --env-file=../stacks/.env scripts/import-from-stacks.mjs",
+    "link:stacks": "node --env-file=.env.local scripts/link-stacks.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

@@ -5,6 +5,7 @@ import { getStorage, type StorageAdapter } from "@/lib/storage";
 import { cleanItemPatch, cleanOptional } from "@/lib/text";
 import { applyTiers, defaultTiers, moveToTier, type TierZone } from "@/lib/tiers";
 import {
+  LIST_KINDS,
   RANKING_MODES,
   type Item,
   type ItemPatch,
@@ -44,6 +45,7 @@ export class ListService {
       title,
       description: cleanOptional(input.description),
       itemSourceType: input.itemSourceType ?? "manual",
+      kind: input.kind ?? "anything",
       rankingMode: input.rankingMode ?? "tier",
       tiers: defaultTiers(),
       createdAt: timestamp,
@@ -61,6 +63,10 @@ export class ListService {
       next.title = title;
     }
     if ("description" in patch) next.description = cleanOptional(patch.description);
+    if (patch.kind !== undefined) {
+      if (!LIST_KINDS.includes(patch.kind)) throw new Error(`Unknown list kind "${patch.kind}".`);
+      next.kind = patch.kind;
+    }
     if (patch.rankingMode !== undefined) {
       if (!RANKING_MODES.includes(patch.rankingMode))
         throw new Error(`Unknown ranking mode "${patch.rankingMode}".`);

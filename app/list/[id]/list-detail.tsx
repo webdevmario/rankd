@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { ArrowLeft, ImageDown, Pencil, Plus, Rows3 } from "lucide-react";
+import { BookPickerDialog } from "@/components/list/book-picker-dialog";
 import { ItemDialog } from "@/components/list/item-dialog";
 import { ModeToggle } from "@/components/list/mode-toggle";
 import { RankedList } from "@/components/list/ranked-list";
@@ -16,7 +17,8 @@ import { Button } from "@/components/ui/button";
 import { useList } from "@/hooks/use-list";
 import type { Item, List } from "@/types/list";
 
-type DialogState = { kind: "add-item" } | { kind: "edit-item"; item: Item } | { kind: "edit-list" };
+type DialogState =
+  { kind: "add-book" } | { kind: "add-item" } | { kind: "edit-item"; item: Item } | { kind: "edit-list" };
 
 export function ListDetail({ id, initialList }: { id: string; initialList?: List | null }) {
   const router = useRouter();
@@ -50,10 +52,11 @@ export function ListDetail({ id, initialList }: { id: string; initialList?: List
     if (item) show({ kind: "edit-item", item });
   };
 
+  const books = list?.kind === "books";
   const addButton = (
-    <Button size="lg" onClick={() => show({ kind: "add-item" })}>
+    <Button size="lg" onClick={() => show({ kind: books ? "add-book" : "add-item" })}>
       <Plus />
-      Add item
+      {books ? "Add a book" : "Add item"}
     </Button>
   );
 
@@ -112,7 +115,9 @@ export function ListDetail({ id, initialList }: { id: string; initialList?: List
             {list.items.length === 0 ? (
               <EmptyState
                 icon={<Rows3 className="size-5" />}
-                title="Add your first item to start ranking."
+                title={
+                  books ? "Add your first book to start ranking." : "Add your first item to start ranking."
+                }
                 body={
                   list.rankingMode === "tier"
                     ? "New items land in Unranked. Drag them up into a tier from there."
@@ -144,6 +149,21 @@ export function ListDetail({ id, initialList }: { id: string; initialList?: List
               </>
             )}
           </section>
+
+          {dialog?.kind === "add-book" && (
+            <BookPickerDialog
+              open={open}
+              onOpenChange={setOpen}
+              landingLabel={
+                list.rankingMode === "tier"
+                  ? "It lands in Unranked."
+                  : `It lands at #${list.items.length + 1}.`
+              }
+              onList={new Set(list.items.flatMap((item) => (item.sourceRef ? [item.sourceRef] : [])))}
+              onSubmit={addItem}
+              onManual={() => setDialog({ kind: "add-item" })}
+            />
+          )}
 
           {dialog?.kind === "add-item" && (
             <ItemDialog

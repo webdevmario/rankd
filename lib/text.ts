@@ -15,6 +15,9 @@ export function cleanItemInput(input: NewItem): NewItem {
     description: cleanOptional(input.description),
     coverImageUrl: cleanOptional(input.coverImageUrl),
     notes: cleanOptional(input.notes),
+    // A Stacks link and its author come from the book picker, not from typing.
+    sourceRef: input.sourceRef,
+    author: input.author,
   };
 }
 

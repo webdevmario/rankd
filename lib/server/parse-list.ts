@@ -1,8 +1,10 @@
 import "server-only";
 import { normalizeRanks } from "@/lib/ranking";
 import { defaultTiers, UNRANKED } from "@/lib/tiers";
+import { stacksBookId } from "@/lib/stacks-ref";
 import {
   ITEM_SOURCE_TYPES,
+  LIST_KINDS,
   MAX_TIER_LABEL,
   MAX_TIERS,
   RANKING_MODES,
@@ -30,6 +32,8 @@ export function parseList(input: unknown): List {
     id: uuid(value.id, "id"),
     title: requiredText(value.title, "title"),
     itemSourceType: oneOf(value.itemSourceType, ITEM_SOURCE_TYPES, "itemSourceType"),
+    // Clients from before list kinds don't send one.
+    kind: value.kind === undefined ? "anything" : oneOf(value.kind, LIST_KINDS, "kind"),
     rankingMode: oneOf(value.rankingMode, RANKING_MODES, "rankingMode"),
     tiers,
     createdAt: timestamp(value.createdAt, "createdAt"),
@@ -77,6 +81,14 @@ function parseItem(input: unknown, index: number, tierIds: Set<string>): Item {
   if (notes) item.notes = notes;
   // A tier the list doesn't have (say, one just deleted) means unranked.
   if (typeof value.tier === "string" && tierIds.has(value.tier)) item.tier = value.tier;
+  // `author` is read-only (it comes from Stacks), so it isn't kept.
+  const sourceRef = optionalText(value.sourceRef, `items[${index}].sourceRef`);
+  if (sourceRef) {
+    if (stacksBookId(sourceRef) === null) {
+      throw new InvalidListError(`items[${index}].sourceRef must look like stacks:book:123.`);
+    }
+    item.sourceRef = sourceRef;
+  }
   return item;
 }
 

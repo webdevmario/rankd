@@ -82,6 +82,13 @@ Then check `curl localhost:3010/api/lists` returns his lists.
   Parents keep dialog content in state separately from `open` so the exit animation has something to show
   (`app/list/[id]/list-detail.tsx`).
 
+## Stacks link (2026-11-08)
+
+Shipped: Books lists (`lists.kind`), items linked to Stacks books (`items.source_ref`), title, author and
+cover read live from Stacks, "Add a book" searching the Stacks shelf. The King list is linked (all 14 items).
+Backup from just before: `~/Backups/postgres/rankd-before-stacks-link-20261108.dump`. See "Books lists and
+Stacks" in `README.md`. Linked titles are Stacks's ("It: A Novel", "Skeleton crew"); rename them in Stacks.
+
 ## Backlog and open threads
 
 1. **Ask Mario which updates he felt weren't applied.** Mid-session he said "there are a lot of updates you
@@ -94,7 +101,7 @@ Then check `curl localhost:3010/api/lists` returns his lists.
    or use two columns.
 4. **Width**: offered going to 1280px or edge to edge if he wants it closer to TierMaker.
 5. **Descriptions and notes** still clamp at two lines; offered one-line ellipsis to match titles.
-6. **Stacks sync** later (he's undecided). `data/king-books.json` and `npm run import:stacks` are kept for it;
+6. **Stacks sync**: done as a live link (above). Next is the Stacks MCP (Stacks `docs/book-mcp-plan.md`). `data/king-books.json` and `npm run import:stacks` are kept for it;
    nothing reads them at runtime.
 7. **Vercel deploy** would need a hosted Postgres (Neon or Supabase) plus `DATABASE_URL` and a migrate run.
 8. **No auth**: anyone on the tailnet can edit, same as his other apps. Fine for now.

@@ -9,9 +9,21 @@ export function hiResCoverUrl(url: string): string {
   return url.replace(/^(https:\/\/covers\.openlibrary\.org\/.+)-[SM]\.jpg$/i, "$1-L.jpg");
 }
 
-/** A cover as a data URL, fetched through rankd's image proxy. Undefined if it can't be loaded. */
+/**
+ * A cover as a data URL, fetched through rankd's image proxy (rankd's own
+ * paths, like a Stacks cover, are fetched directly). Undefined if it can't be
+ * loaded.
+ */
 export async function inlineCover(src: string): Promise<string | undefined> {
   if (src.startsWith("data:image/")) return src;
+  if (src.startsWith("/")) {
+    try {
+      const response = await fetch(src);
+      return response.ok ? await blobToDataUrl(await response.blob()) : undefined;
+    } catch {
+      return undefined;
+    }
+  }
   const candidates = [...new Set([hiResCoverUrl(src), src])];
   for (const url of candidates) {
     try {
