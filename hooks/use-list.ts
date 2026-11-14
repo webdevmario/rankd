@@ -22,7 +22,8 @@ interface State {
  * persistence fails the list is reloaded from storage.
  *
  * `initial` is the list as the server rendered it (null: not found). The page
- * shows it at once and refreshes it quietly in the background.
+ * shows it as is, with no second fetch on mount, and refreshes it when the tab
+ * comes back into view.
  */
 export function useList(id: string, initial?: List | null) {
   const [state, setState] = useState<State>(() =>
@@ -34,6 +35,7 @@ export function useList(id: string, initial?: List | null) {
   );
   // Bumped by every local edit, so a reload that started before the edit doesn't undo it on screen.
   const edits = useRef(0);
+  const rendered = useRef(initial !== undefined);
 
   const load = useCallback(async () => {
     const editsAtStart = edits.current;
@@ -48,6 +50,12 @@ export function useList(id: string, initial?: List | null) {
   }, [id]);
 
   useEffect(() => {
+    // The server just read this list; reading it again would only repeat the database and Stacks calls.
+    // Skipped once only, so a later change of `id` still loads.
+    if (rendered.current) {
+      rendered.current = false;
+      return;
+    }
     void load();
   }, [load]);
 
