@@ -20,8 +20,8 @@
     <key>KeepAlive</key>
     <true/>
     <key>StandardOutPath</key>
-    <string>/tmp/rankd.log</string>
+    <string>__HOME__/Library/Logs/rankd/rankd.log</string>
     <key>StandardErrorPath</key>
-    <string>/tmp/rankd-error.log</string>
+    <string>__HOME__/Library/Logs/rankd/rankd-error.log</string>
 </dict>
 </plist>
