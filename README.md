@@ -148,8 +148,8 @@ Day to day:
 npm run prod:deploy    # migrate + build + restart (run after code changes)
 npm run prod:restart
 npm run prod:stop
-npm run prod:logs      # /tmp/rankd.log
-npm run prod:errors    # /tmp/rankd-error.log
+npm run prod:logs      # ~/Library/Logs/rankd/rankd.log
+npm run prod:errors    # ~/Library/Logs/rankd/rankd-error.log
 ```
 
 The service reads `DATABASE_URL` from `.env.local` in the main checkout
